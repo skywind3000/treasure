@@ -4,6 +4,11 @@
 
 #define ib_value(node) ((int*)((char*)node + sizeof(struct ib_node)))[0]
 
+
+//---------------------------------------------------------------------
+// internal inline
+//---------------------------------------------------------------------
+
 /* LEFT is 0: walk towards left, and 1 for right */
 static inline struct ib_node *_ib_node_walk(struct ib_node *node, int LEFT)
 {
@@ -61,6 +66,53 @@ _ib_node_rotate(struct ib_node *node, struct ib_root *root, int LEFT)
 	return right;
 }
 
+static inline void
+_ib_node_update_insert(struct ib_root *root,
+		struct ib_node *node, struct ib_node *parent, 
+		struct ib_node *gparent, int LEFT)
+{
+	int RIGHT = 1 - LEFT;
+	struct ib_node *uncle = gparent->child[RIGHT];
+	if (uncle) {
+		if (uncle->color == IB_RED) {
+			uncle->color = IB_BLACK;
+			parent->color = IB_BLACK;
+			gparent->color = IB_RED;
+			return gparent;
+		}
+	}
+	if (parent->child[RIGHT] == node) {
+		struct ib_node *tmp;
+		_ib_node_rotate(parent, root, LEFT);
+		tmp = parent;
+		parent = node;
+		node = tmp;
+	}
+	parent->color = IB_BLACK;
+	gparent->color = IB_RED;
+	_ib_node_rotate(gparent, root, RIGHT);
+	return node;
+}
+
+void ib_insert_color(struct ib_node *node, struct ib_root *root)
+{
+	node->color = IB_RED;
+	while (1) {
+		struct ib_node *parent, *gparent;
+		parent = node->parent;
+		if (parent == NULL) break;
+		if (parent->color != IB_RED) break;
+		gparent = parent->parent;
+		if (parent == gparent->child[0]) {
+			node = _ib_node_update_insert(root, node, parent, gparent, 0);
+		}
+		else {
+			node = _ib_node_update_insert(root, node, parent, gparent, 1);
+		}
+	}
+	root->node->color = IB_BLACK;
+}
+
 static inline void 
 ib_set_child(struct ib_node *parent, struct ib_node *child, int LEFT)
 {
@@ -80,6 +132,10 @@ void rotate_right(struct ib_node *node, struct ib_root *root)
 
 typedef struct ib_node ib_node;
 
+
+//---------------------------------------------------------------------
+// help
+//---------------------------------------------------------------------
 
 ib_node *node_new(int value, ib_node *parent, ib_node *left, ib_node *right)
 {
@@ -201,6 +257,48 @@ void print_t(struct ib_node *tree)
 	printf("\n");
 }
 
+
+//---------------------------------------------------------------------
+// construct
+//---------------------------------------------------------------------
+struct ib_root *new_tree_from_int(const int *array, int size)
+{
+	struct ib_root *root = (struct ib_root*)malloc(sizeof(struct ib_root));
+	root->node = NULL;
+	for (; size > 0; size--) {
+		int x = *array++;
+		struct ib_node *newnode = node_new(x, NULL, NULL, NULL);
+		struct ib_node *node = root->node;
+		if (node == NULL) {
+			printf("insert root: %d\n", x);
+			root->node = newnode;
+		}
+		else {
+			struct ib_node *parent = node;
+			int nv;
+			printf("insert leaf: %d\n", x);
+			while (node) {
+				parent = node;
+				nv = ib_value(node);
+				if (x <= nv) 
+					node = node->child[0];
+				else  
+					node = node->child[1];
+			}
+			parent->child[(x <= nv)? 0 : 1] = newnode;
+			newnode->parent = parent;
+		}
+	}
+	printf("over\n");
+	return root;
+}
+
+
+
+//---------------------------------------------------------------------
+// test
+//---------------------------------------------------------------------
+
 void test1()
 {
 	struct ib_root root;
@@ -240,12 +338,22 @@ void test1()
 	printf("time2: %d\n", (int)t2);
 }
 
+void test2()
+{
+	int array[] = { 10, 5, 20, 4, 6, 15, 30 };
+	struct ib_root *root = new_tree_from_int(array, 7);
+	printf("sizeof=%d\n", sizeof(array));
+	print_t(root->node);
+}
 
 int main(void)
 {
-	test1();
+	test2();
 	return 0;
 }
 
+/*
+ *
+ */
 
 

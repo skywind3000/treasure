@@ -45,19 +45,25 @@
 
 
 //---------------------------------------------------------------------
-// ib_node - intergrated binary search tree
+// ib_node - binary search tree (both used for rbtree & avl)
 //---------------------------------------------------------------------
 struct ib_node
 {
-	struct ib_node *child[2];	// 0 for left, 1 for right, reduce branch
-	struct ib_node *parent;
-	unsigned int color;			// can also be used as balance / height
+	struct ib_node *child[2];   /* 0 for left, 1 for right, reduce branch */
+	struct ib_node *parent;     /* pointing to node itself for empty node */
+	unsigned int color;         /* can also be used as balance / height */
 };
 
 struct ib_root
 {
-	struct ib_node *node;		// root node
+	struct ib_node *node;		/* root node */
 };
+
+#define IB_LEFT    0        /* left child index */
+#define IB_RIGHT   1        /* right child index */
+
+#define IB_RED     0
+#define IB_BLACK   1
 
 #endif
 
