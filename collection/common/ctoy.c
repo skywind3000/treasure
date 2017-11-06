@@ -4,6 +4,7 @@
 
 #define ib_value(node) ((int*)((char*)node + sizeof(struct ib_node)))[0]
 
+/* LEFT is 0: walk towards left, and 1 for right */
 static inline struct ib_node *_ib_node_walk(struct ib_node *node, int LEFT)
 {
 	int RIGHT = 1 - LEFT;
@@ -26,13 +27,13 @@ static inline struct ib_node *_ib_node_walk(struct ib_node *node, int LEFT)
 	return node;
 }
 
+/* LEFT is 0: left head, and 1 for right head */
 static inline struct ib_node *_ib_node_head(struct ib_root *root, int LEFT)
 {
 	struct ib_node *node = root->node;
-	int RIGHT = 1 - LEFT;
 	if (node == NULL) return NULL;
-	while (node->child[RIGHT]) 
-		node = node->child[RIGHT];
+	while (node->child[LEFT]) 
+		node = node->child[LEFT];
 	return node;
 }
 
@@ -106,7 +107,7 @@ void test_nodes(struct ib_root *root)
 
 void print_nodes(struct ib_root *root)
 {
-	struct ib_node *node = _ib_node_head(root, 1);
+	struct ib_node *node = _ib_node_head(root, 0);
 	while (node) {
 		printf("%d ", ib_value(node));
 		node = _ib_node_walk(node, 1);
@@ -207,6 +208,8 @@ void test1()
 #define TIMES	400000000
 	test_nodes(&root);
 	print_t(root.node);
+	print_nodes(&root);
+	printf("\n");
 	rotate_left(root.node, &root);	
 	print_t(root.node);
 	rotate_right(root.node, &root);	
