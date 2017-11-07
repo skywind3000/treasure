@@ -41,8 +41,8 @@
 #endif
 
 /* you can change this by config.h or predefined macro */
-#ifndef assertion
-#define assertion(x) {}
+#ifndef ASSERTION
+#define ASSERTION(x) ((void)0)
 #endif
 
 
@@ -140,7 +140,7 @@ void *ib_tree_next(struct ib_tree *tree, void *data);
 void *ib_tree_prev(struct ib_tree *tree, void *data);
 
 void *ib_tree_find(struct ib_tree *tree, const void *data);
-void *ib_tree_nearest(struct ib_tree *tree, const void *data)
+void *ib_tree_nearest(struct ib_tree *tree, const void *data);
 
 /* returns NULL for success, otherwise returns conflict node with same key */
 void *ib_tree_add(struct ib_tree *tree, void *data);

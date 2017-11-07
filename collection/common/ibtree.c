@@ -60,6 +60,7 @@ _ib_node_rotate(struct ib_node *node, struct ib_root *root, int LEFT)
 	int RIGHT = 1 - LEFT;
 	struct ib_node *right = node->child[RIGHT];
 	node->child[RIGHT] = right->child[LEFT];
+	ASSERTION(node && right);
 	if (right->child[LEFT]) 
 		right->child[LEFT]->parent = node;
 	right->child[LEFT] = node;
@@ -183,6 +184,7 @@ void ib_node_erase(struct ib_node *node, struct ib_root *root)
 {
 	struct ib_node *child, *parent;
 	unsigned int color;
+	ASSERTION(node);
 	if (node->child[0] && node->child[1]) {
 		struct ib_node *old = node;
 		struct ib_node *left = node->child[IB_RIGHT];
@@ -284,7 +286,7 @@ void *ib_tree_next(struct ib_tree *tree, void *data)
 	nn = IB_DATA2NODE(data, tree->offset);
 	nn = ib_node_next(nn);
 	if (!nn) return NULL;
-	return IB_NODE2DATA(nn);
+	return IB_NODE2DATA(nn, tree->offset);
 }
 
 void *ib_tree_prev(struct ib_tree *tree, void *data)
@@ -294,7 +296,7 @@ void *ib_tree_prev(struct ib_tree *tree, void *data)
 	nn = IB_DATA2NODE(data, tree->offset);
 	nn = ib_node_prev(nn);
 	if (!nn) return NULL;
-	return IB_NODE2DATA(nn);
+	return IB_NODE2DATA(nn, tree->offset);
 }
 
 
@@ -370,9 +372,9 @@ void *ib_tree_add(struct ib_tree *tree, void *data)
 
 void ib_tree_remove(struct ib_tree *tree, void *data)
 {
-	struct ib_node *node = IB_DATA2NODE(data);
+	struct ib_node *node = IB_DATA2NODE(data, tree->offset);
 	if (!ib_node_empty(node)) {
-		ib_node_erase(node, &tree->tree);
+		ib_node_erase(node, &tree->root);
 		tree->count--;
 	}
 }
@@ -380,8 +382,8 @@ void ib_tree_remove(struct ib_tree *tree, void *data)
 
 void ib_tree_replace(struct ib_tree *tree, void *victim, void *newdata)
 {
-	struct ib_node *vicnode = IB_DATA2NODE(victim);
-	struct ib_node *newnode = IB_DATA2NODE(newdata);
+	struct ib_node *vicnode = IB_DATA2NODE(victim, tree->offset);
+	struct ib_node *newnode = IB_DATA2NODE(newdata, tree->offset);
 	ib_node_replace(vicnode, newnode, &tree->root);
 }
 
