@@ -375,6 +375,7 @@ void ib_tree_remove(struct ib_tree *tree, void *data)
 	struct ib_node *node = IB_DATA2NODE(data, tree->offset);
 	if (!ib_node_empty(node)) {
 		ib_node_erase(node, &tree->root);
+		node->parent = node;
 		tree->count--;
 	}
 }
@@ -385,6 +386,7 @@ void ib_tree_replace(struct ib_tree *tree, void *victim, void *newdata)
 	struct ib_node *vicnode = IB_DATA2NODE(victim, tree->offset);
 	struct ib_node *newnode = IB_DATA2NODE(newdata, tree->offset);
 	ib_node_replace(vicnode, newnode, &tree->root);
+	vicnode->parent = vicnode;
 }
 
 

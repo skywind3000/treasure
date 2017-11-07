@@ -29,6 +29,7 @@ typedef struct ib_node ib_node;
 //---------------------------------------------------------------------
 // help
 //---------------------------------------------------------------------
+#define ib_value(node) (((int*)((char*)node + sizeof(struct ib_node)))[0])
 
 ib_node *node_new(int value, ib_node *parent, ib_node *left, ib_node *right)
 {
@@ -239,9 +240,56 @@ void test2()
 	print_t(root->node);
 }
 
+typedef struct mynode
+{
+	struct ib_node node;
+	int x;
+}	mynode;
+
+mynode* new_mynode(int x) {
+	mynode *n = (mynode*)malloc(sizeof(mynode));
+	n->x = x;
+	n->node.parent = &n->node;
+	return n;
+}
+
+int compare(const void *n1, const void *n2)
+{
+	mynode *x = (mynode*)n1;
+	mynode *y = (mynode*)n2;
+	return x->x - y->x;
+}
+
+void test3()
+{
+	int array[] = { 12, 10, 20, 4, 6, 15, 5, 30, -1 };
+	struct ib_tree tree;
+	int i;
+	ib_tree_init(&tree, compare, sizeof(mynode), IB_OFFSET(mynode, node));
+	for (i = 0; array[i] > 0; i++) {
+		mynode *node = new_mynode(array[i]);
+		ib_tree_add(&tree, node);
+	}
+	print_t(tree.root.node);
+	mynode *it = ib_tree_first(&tree);
+	printf("[ ");
+	for (; it; it = ib_tree_next(&tree, it)) {
+		printf("%d ", ib_value(it));
+	}
+	printf("] \n");
+	mynode dummy;
+	dummy.x = 6;
+	mynode *node = ib_tree_find(&tree, &dummy);
+	if (node) {
+		printf("find and remove: %d\n", node->x);
+		ib_tree_remove(&tree, node);
+	}
+	print_t(tree.root.node);
+}
+
 int main(void)
 {
-	test2();
+	test3();
 	return 0;
 }
 

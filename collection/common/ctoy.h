@@ -8,6 +8,9 @@
 #include "ibtree.h"
 
 
+typedef struct {
+	ib_tree tree;
+}	ic_dict_rb;
 
 #endif
 
