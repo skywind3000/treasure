@@ -32,21 +32,11 @@
 #endif
 
 
-//---------------------------------------------------------------------
-// binary search tree
-//---------------------------------------------------------------------
-#define IB_OFFSET(TYPE, MEMBER)    ((size_t) &((TYPE *)0)->MEMBER)
-
-#define IB_NODE2DATA(n, o)    ((void *)((size_t)(n) - (o)))
-#define IB_DATA2NODE(d, o)    ((struct ib_node*)((size_t)(d) + (o)))
-
-#define IB_ENTRY(ptr, type, member) \
-	IB_NODE2DATA(ptr, IB_OFFSET(type, member))
-
-
-//---------------------------------------------------------------------
-// ib_node - binary search tree (both used for rbtree & avl)
-//---------------------------------------------------------------------
+/*====================================================================*/
+/* ib_node - binary search tree (can be used in rbtree & avl)         */
+/* use array for left/right child pointers to reduce cpu branches     */
+/* color won't be packed into pointers (can work without alignment)   */
+/*====================================================================*/
 struct ib_node
 {
 	struct ib_node *child[2];   /* 0 for left, 1 for right, reduce branch */
@@ -59,11 +49,55 @@ struct ib_root
 	struct ib_node *node;		/* root node */
 };
 
+
+/*--------------------------------------------------------------------*/
+/* macros                                                             */
+/*--------------------------------------------------------------------*/
 #define IB_LEFT    0        /* left child index */
 #define IB_RIGHT   1        /* right child index */
 
 #define IB_RED     0
 #define IB_BLACK   1
+
+#define IB_OFFSET(TYPE, MEMBER)    ((size_t) &((TYPE *)0)->MEMBER)
+
+#define IB_NODE2DATA(n, o)    ((void *)((size_t)(n) - (o)))
+#define IB_DATA2NODE(d, o)    ((struct ib_node*)((size_t)(d) + (o)))
+
+#define IB_ENTRY(ptr, type, member) \
+	IB_NODE2DATA(ptr, IB_OFFSET(type, member))
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*--------------------------------------------------------------------*/
+/* ib_node - binary search tree (can be used in rbtree & avl)         */
+/*--------------------------------------------------------------------*/
+struct ib_node *ib_node_first(struct ib_root *root);
+struct ib_node *ib_node_last(struct ib_root *root);
+struct ib_node *ib_node_next(struct ib_node *node);
+struct ib_node *ib_node_prev(struct ib_node *node);
+
+
+void ib_node_insert_color(struct ib_node *node, struct ib_root *root);
+void ib_node_erase(struct ib_node *node, struct ib_root *root);
+
+void ib_node_replace(struct ib_node *victim, struct ib_node *newnode,
+		struct ib_root *root);
+
+static inline void ib_link_node(struct ib_node *node, struct ib_node *parent,
+		struct ib_node **ib_link) {
+	node->parent = parent;
+	node->color = IB_RED;
+	node->child[0] = node->child[1] = NULL;
+	ib_link[0] = node;
+}
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

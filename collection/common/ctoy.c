@@ -42,12 +42,31 @@ static inline struct ib_node *_ib_node_head(struct ib_root *root, int LEFT)
 	return node;
 }
 
+struct ib_node *ib_node_first(struct ib_root *root)
+{
+	return _ib_node_head(root, 0);
+}
+
+struct ib_node *ib_node_last(struct ib_root *root)
+{
+	return _ib_node_head(root, 1);
+}
+
+struct ib_node *ib_node_next(struct ib_node *node)
+{
+	return _ib_node_walk(node, 1);
+}
+
+struct ib_node *ib_node_prev(struct ib_node *node)
+{
+	return _ib_node_walk(node, 0);
+}
+
 static inline struct ib_node *
 _ib_node_rotate(struct ib_node *node, struct ib_root *root, int LEFT)
 {
 	int RIGHT = 1 - LEFT;
 	struct ib_node *right = node->child[RIGHT];
-	/* assert(right); */
 	node->child[RIGHT] = right->child[LEFT];
 	if (right->child[LEFT]) 
 		right->child[LEFT]->parent = node;
@@ -171,7 +190,6 @@ _ib_erase_color(struct ib_node *node, struct ib_root *root)
 void ib_node_erase(struct ib_node *node, struct ib_root *root)
 {
 	struct ib_node *child, *parent;
-	struct ib_node *save = node;
 	unsigned int color;
 	if (node->child[0] && node->child[1]) {
 		struct ib_node *old = node;
@@ -218,12 +236,29 @@ void ib_node_erase(struct ib_node *node, struct ib_root *root)
 	if (color == IB_BLACK) {
 		_ib_erase_color(child, root);
 	}
-	if (save) {
-		save->parent = save;
+}
+
+void ib_node_replace(struct ib_node *victim, struct ib_node *newnode,
+		struct ib_root *root)
+{
+	struct ib_node *parent = victim->parent;
+	if (parent) {
+		parent->child[(parent->child[1] == victim)? 1 : 0] = newnode;
+	}	else {
+		root->node = newnode;
 	}
+	if (victim->child[0]) victim->child[0]->parent = newnode;
+	if (victim->child[1]) victim->child[1]->parent = newnode;
+	newnode->child[0] = victim->child[0];
+	newnode->child[1] = victim->child[1];
+	newnode->parent = victim->parent;
+	newnode->color = victim->color;
 }
 
 
+//---------------------------------------------------------------------
+// 
+//---------------------------------------------------------------------
 static inline void 
 ib_set_child(struct ib_node *parent, struct ib_node *child, int LEFT)
 {
