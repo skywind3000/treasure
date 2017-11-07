@@ -12,9 +12,13 @@
 
 #include <stddef.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 
 /*====================================================================*/
-/* INLINE                                                             */
+/* GLOBAL MACROS                                                      */
 /*====================================================================*/
 #ifndef INLINE
 #if defined(__GNUC__)
@@ -33,7 +37,12 @@
 #endif
 
 #if (!defined(__cplusplus)) && (!defined(inline))
-/* #define inline INLINE */
+#define inline INLINE
+#endif
+
+/* you can change this by config.h or predefined macro */
+#ifndef assertion
+#define assertion(x) {}
 #endif
 
 
@@ -72,6 +81,9 @@ struct ib_root
 #define IB_ENTRY(ptr, type, member) \
 	IB_NODE2DATA(ptr, IB_OFFSET(type, member))
 
+#define ib_node_init(node) do { ((node)->parent) = (node); } while (0)
+#define ib_node_empty(node) ((node)->parent == (node))
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -84,20 +96,57 @@ struct ib_node *ib_node_last(struct ib_root *root);
 struct ib_node *ib_node_next(struct ib_node *node);
 struct ib_node *ib_node_prev(struct ib_node *node);
 
-
 void ib_node_insert_color(struct ib_node *node, struct ib_root *root);
 void ib_node_erase(struct ib_node *node, struct ib_root *root);
 
 void ib_node_replace(struct ib_node *victim, struct ib_node *newnode,
 		struct ib_root *root);
 
-static inline void ib_link_node(struct ib_node *node, struct ib_node *parent,
+static inline void ib_node_link(struct ib_node *node, struct ib_node *parent,
 		struct ib_node **ib_link) {
 	node->parent = parent;
 	node->color = IB_RED;
 	node->child[0] = node->child[1] = NULL;
 	ib_link[0] = node;
 }
+
+
+/*--------------------------------------------------------------------*/
+/* rbtree - friendly interface                                        */
+/*--------------------------------------------------------------------*/
+struct ib_tree
+{
+	struct ib_root root;		/* rbtree root */
+	size_t offset;				/* node offset in user data structure */
+	size_t size;                /* size of user data structure */
+	size_t count;				/* node count */
+	/* returns 0 for equal, -1 for n1 < n2, 1 for n1 > n2 */
+	int (*compare)(const void *n1, const void *n2);
+};
+
+
+/* initialize rbtree, use IB_OFFSET(type, member) for "offset"
+ * eg:
+ *     ib_tree_init(&mytree, mystruct_compare,
+ *          sizeof(struct mystruct_t), 
+ *          IB_OFFSET(struct mystruct_t, node));
+ */
+void ib_tree_init(struct ib_tree *tree,
+		int (*compare)(const void*, const void*), size_t size, size_t offset);
+
+void *ib_tree_first(struct ib_tree *tree);
+void *ib_tree_last(struct ib_tree *tree);
+void *ib_tree_next(struct ib_tree *tree, void *data);
+void *ib_tree_prev(struct ib_tree *tree, void *data);
+
+void *ib_tree_find(struct ib_tree *tree, const void *data);
+void *ib_tree_nearest(struct ib_tree *tree, const void *data)
+
+/* returns NULL for success, otherwise returns conflict node with same key */
+void *ib_tree_add(struct ib_tree *tree, void *data);
+
+void ib_tree_remove(struct ib_tree *tree, void *data);
+void ib_tree_replace(struct ib_tree *tree, void *victim, void *newdata);
 
 
 #ifdef __cplusplus

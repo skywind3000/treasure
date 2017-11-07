@@ -248,3 +248,142 @@ void ib_node_replace(struct ib_node *victim, struct ib_node *newnode,
 }
 
 
+/*--------------------------------------------------------------------*/
+/* rbtree - friendly interface                                        */
+/*--------------------------------------------------------------------*/
+
+void ib_tree_init(struct ib_tree *tree,
+	int (*compare)(const void*, const void*), size_t size, size_t offset)
+{
+	tree->root.node = NULL;
+	tree->offset = offset;
+	tree->size = size;
+	tree->count = 0;
+	tree->compare = compare;
+}
+
+
+void *ib_tree_first(struct ib_tree *tree)
+{
+	struct ib_node *node = ib_node_first(&tree->root);
+	if (!node) return NULL;
+	return IB_NODE2DATA(node, tree->offset);
+}
+
+void *ib_tree_last(struct ib_tree *tree)
+{
+	struct ib_node *node = ib_node_last(&tree->root);
+	if (!node) return NULL;
+	return IB_NODE2DATA(node, tree->offset);
+}
+
+void *ib_tree_next(struct ib_tree *tree, void *data)
+{
+	struct ib_node *nn;
+	if (!data) return NULL;
+	nn = IB_DATA2NODE(data, tree->offset);
+	nn = ib_node_next(nn);
+	if (!nn) return NULL;
+	return IB_NODE2DATA(nn);
+}
+
+void *ib_tree_prev(struct ib_tree *tree, void *data)
+{
+	struct ib_node *nn;
+	if (!data) return NULL;
+	nn = IB_DATA2NODE(data, tree->offset);
+	nn = ib_node_prev(nn);
+	if (!nn) return NULL;
+	return IB_NODE2DATA(nn);
+}
+
+
+void *ib_tree_find(struct ib_tree *tree, const void *data)
+{
+	struct ib_node *n = tree->root.node;
+	int (*compare)(const void*, const void*) = tree->compare;
+	int offset = tree->offset;
+	while (n) {
+		void *nd = IB_NODE2DATA(n, offset);
+		int hr = compare(data, nd);
+		if (hr != 0) {
+			n = n->child[(hr > 0)? IB_RIGHT : IB_LEFT];
+		}
+		else {
+			return nd;
+		}
+	}
+	return NULL;
+}
+
+void *ib_tree_nearest(struct ib_tree *tree, const void *data)
+{
+	struct ib_node *n = tree->root.node;
+	struct ib_node *p = NULL;
+	int (*compare)(const void*, const void*) = tree->compare;
+	int offset = tree->offset;
+	while (n) {
+		void *nd = IB_NODE2DATA(n, offset);
+		int hr = compare(data, nd);
+		if (hr != 0) {
+			p = n;
+			n = n->child[(hr > 0)? IB_RIGHT : IB_LEFT];
+		}
+		else {
+			return nd;
+		}
+	}
+	return (p)? IB_NODE2DATA(p, offset) : NULL;
+}
+
+
+/* returns NULL for success, otherwise returns conflict node with same key */
+void *ib_tree_add(struct ib_tree *tree, void *data)
+{
+	struct ib_node **link = &tree->root.node;
+	struct ib_node *parent = NULL;
+	struct ib_node *node = IB_DATA2NODE(data, tree->offset);
+	int (*compare)(const void*, const void*) = tree->compare;
+	int offset = tree->offset;
+	while (link[0]) {
+		void *pd;
+		int hr;
+		parent = link[0];
+		pd = IB_NODE2DATA(parent, offset);
+		hr = compare(node, pd);
+		if (hr == 0) {
+			return pd;
+		}	
+		else if (hr < 0) {
+			link = &(parent->child[0]);
+		}
+		else {
+			link = &(parent->child[1]);
+		}
+	}
+	ib_node_link(node, parent, link);
+	ib_node_insert_color(node, &tree->root);
+	tree->count++;
+	return NULL;
+}
+
+
+void ib_tree_remove(struct ib_tree *tree, void *data)
+{
+	struct ib_node *node = IB_DATA2NODE(data);
+	if (!ib_node_empty(node)) {
+		ib_node_erase(node, &tree->tree);
+		tree->count--;
+	}
+}
+
+
+void ib_tree_replace(struct ib_tree *tree, void *victim, void *newdata)
+{
+	struct ib_node *vicnode = IB_DATA2NODE(victim);
+	struct ib_node *newnode = IB_DATA2NODE(newdata);
+	ib_node_replace(vicnode, newnode, &tree->root);
+}
+
+
+
