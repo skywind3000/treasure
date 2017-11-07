@@ -9,7 +9,7 @@
 
 
 typedef struct {
-	ib_tree tree;
+	struct ib_tree tree;
 }	ic_dict_rb;
 
 #endif

@@ -260,6 +260,10 @@ int compare(const void *n1, const void *n2)
 	return x->x - y->x;
 }
 
+int compare2(const struct ib_node *n1, const struct ib_node *n2) {
+	return compare(n1, n2);
+}
+
 void test3()
 {
 	int array[] = { 12, 10, 20, 4, 6, 15, 5, 30, -1 };
@@ -277,13 +281,26 @@ void test3()
 		printf("%d ", ib_value(it));
 	}
 	printf("] \n");
-	mynode dummy;
+	mynode dummy, dummy2;
 	dummy.x = 6;
+	dummy2.x = 7;
 	mynode *node = ib_tree_find(&tree, &dummy);
 	if (node) {
 		printf("find and remove: %d\n", node->x);
 		ib_tree_remove(&tree, node);
 	}
+	print_t(tree.root.node);
+	int index;
+	struct ib_node *x_key = (struct ib_node*)&dummy;
+	struct ib_node *x_res;
+	struct ib_node *y_key = (struct ib_node*)&dummy2;
+	dummy.x = 4;
+	ib_node_find(&tree.root, x_key, compare2, x_res, index);
+	printf("%d %d\n", ib_value(x_res), index);
+	ib_node_add(&tree.root, y_key, compare2, x_res);
+	printf("dup: %x\n", x_res);
+	ib_node_add(&tree.root, y_key, compare2, x_res);
+	printf("dup: %x\n", x_res);
 	print_t(tree.root.node);
 }
 

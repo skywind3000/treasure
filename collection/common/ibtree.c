@@ -356,11 +356,8 @@ void *ib_tree_add(struct ib_tree *tree, void *data)
 		if (hr == 0) {
 			return pd;
 		}	
-		else if (hr < 0) {
-			link = &(parent->child[0]);
-		}
 		else {
-			link = &(parent->child[1]);
+			link = &(parent->child[(hr > 0)? 1 : 0]);
 		}
 	}
 	ib_node_link(node, parent, link);

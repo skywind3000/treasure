@@ -112,6 +112,43 @@ static inline void ib_node_link(struct ib_node *node, struct ib_node *parent,
 
 
 /*--------------------------------------------------------------------*/
+/* rbtree - node templates                                            */
+/*--------------------------------------------------------------------*/
+#define ib_node_find(root, what, compare_fn, result_node, result_index) do {\
+		struct ib_node *__n = (root)->node; \
+		(result_node) = NULL; \
+		(result_index) = 0; \
+		while (__n) { \
+			int __hr = (compare_fn)(what, __n); \
+			(result_node) = __n; \
+			if (__hr == 0) { (result_index) = -1; break; } \
+			else if (__hr < 0) { __n = __n->child[0]; (result_index) = 0; } \
+			else { __n = __n->child[1]; (result_index) = 1; } \
+		} \
+	}   while (0)
+
+
+#define ib_node_add(root, newnode, compare_fn, duplicate_node) do { \
+		struct ib_node **__link = &((root)->node); \
+		struct ib_node *__parent = NULL; \
+		struct ib_node *__duplicate = NULL; \
+		int __hr = 1; \
+		while (__link[0]) { \
+			__parent = __link[0]; \
+			__hr = (compare_fn)(newnode, __parent); \
+			if (__hr == 0) { __duplicate = __parent; break; } \
+			else { __link = &(__parent->child[(__hr < 0)? 0 : 1]); } \
+		} \
+		(duplicate_node) = __duplicate; \
+		if (__duplicate == NULL) { \
+			ib_node_link(newnode, __parent, __link); \
+			ib_node_insert_color(newnode, root); \
+		} \
+	}   while (0)
+
+
+
+/*--------------------------------------------------------------------*/
 /* rbtree - friendly interface                                        */
 /*--------------------------------------------------------------------*/
 struct ib_tree
