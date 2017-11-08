@@ -54,6 +54,18 @@ struct ib_node *ib_node_prev(struct ib_node *node)
 	return _ib_node_walk(node, 0);
 }
 
+static inline void 
+_ib_child_replace(struct ib_node *oldnode, struct ib_node *newnode, 
+		struct ib_node *parent, struct ib_root *root) 
+{
+	if (parent) {
+		parent->child[(parent->child[1] == oldnode)? 1 : 0] = newnode;
+	}
+	else {
+		root->node = newnode;
+	}
+}
+
 static inline struct ib_node *
 _ib_node_rotate(struct ib_node *node, struct ib_root *root, int LEFT)
 {
@@ -126,12 +138,13 @@ void ib_node_insert_color(struct ib_node *node, struct ib_root *root)
 }
 
 static inline struct ib_node*
-_ib_node_update_erase(struct ib_node *node, struct ib_root *root, int LEFT)
+_ib_node_erase_update(struct ib_node **child, struct ib_node *parent, 
+		struct ib_root *root, int LEFT)
 {
 	int RIGHT = 1 - LEFT;
-	struct ib_node *parent = node->parent;
+	struct ib_node *node = child[0];
 	struct ib_node *sibling = parent->child[RIGHT];
-
+	ASSERTION(sibling);
 	if (sibling->color == IB_RED) {
 		sibling->color = IB_BLACK;
 		parent->color = IB_RED;
@@ -141,6 +154,9 @@ _ib_node_update_erase(struct ib_node *node, struct ib_root *root, int LEFT)
 	if (((!sibling->child[0]) || sibling->child[0]->color == IB_BLACK) &&
 		((!sibling->child[1]) || sibling->child[1]->color == IB_BLACK)) {
 		sibling->color = IB_RED;
+		node = parent;
+		parent = node->parent;
+		child[0] = node;
 		return parent;
 	}
 	if ((!sibling->child[RIGHT]) || sibling->child[RIGHT]->color != IB_RED) {
@@ -155,23 +171,22 @@ _ib_node_update_erase(struct ib_node *node, struct ib_root *root, int LEFT)
 	if (sibling->child[RIGHT])
 		sibling->child[RIGHT]->color = IB_BLACK;
 	_ib_node_rotate(parent, root, LEFT);
-	return root->node;
+	child[0] = node;
+	return NULL;
 }
 
-static inline void
-_ib_erase_color(struct ib_node *node, struct ib_root *root)
+static inline void 
+_ib_node_rebalance(struct ib_node *parent, struct ib_root *root)
 {
+	struct ib_node *node = NULL;
 	while (1) {
-		struct ib_node *parent;
-		if (node == NULL) break;
-		if (node->color == IB_RED) break;
-		parent = node->parent;
 		if (parent == NULL) break;
+		if (node != NULL && node->color == IB_RED) break;
 		if (parent->child[0] == node) {
-			node = _ib_node_update_erase(node, root, 0);
+			parent = _ib_node_erase_update(&node, parent, root, 0);
 		}
 		else {
-			node = _ib_node_update_erase(node, root, 1);
+			parent = _ib_node_erase_update(&node, parent, root, 1);
 		}
 	}
 	if (node) {
@@ -194,7 +209,6 @@ void ib_node_erase(struct ib_node *node, struct ib_root *root)
 		child = node->child[IB_RIGHT];
 		parent = node->parent;
 		color = node->color;
-		if (child) child->parent = parent;
 		if (parent) {
 			parent->child[(parent->child[1] == node)? 1 : 0] = child;
 		}	else {
@@ -220,16 +234,22 @@ void ib_node_erase(struct ib_node *node, struct ib_root *root)
 		child = node->child[(node->child[0] == NULL)? 1 : 0];
 		parent = node->parent;
 		color = node->color;
-		if (child) 
-			child->parent = parent;
+		/* printf("delete %d child=%d\n", ib_value(node), child? 1:0); */
 		if (parent) {
 			parent->child[(parent->child[1] == node)? 1 : 0] = child;
 		}	else {
 			root->node = child;
 		}
 	}
-	if (color == IB_BLACK) {
-		_ib_erase_color(child, root);
+	/* if node has only one child, it must be red due to rule 5,
+	 * and this node must be black due to rule 4.
+	 */
+	if (child) {
+		child->color = IB_BLACK;
+		child->parent = parent;
+	}
+	else if (color == IB_BLACK && parent) {
+		_ib_node_rebalance(parent, root);
 	}
 }
 
