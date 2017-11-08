@@ -209,22 +209,14 @@ void ib_node_erase(struct ib_node *node, struct ib_root *root)
 		child = node->child[IB_RIGHT];
 		parent = node->parent;
 		color = node->color;
-		if (parent) {
-			parent->child[(parent->child[1] == node)? 1 : 0] = child;
-		}	else {
-			root->node = child;
-		}
+		_ib_child_replace(node, child, parent, root);
 		if (node->parent == old)
 			parent = node;
 		node->child[0] = old->child[0];
 		node->child[1] = old->child[1];
 		node->parent = old->parent;
 		node->color = old->color;
-		if (old->parent) {
-			old->parent->child[(old->parent->child[1] == old)? 1 : 0] = node;
-		}	else {
-			root->node = node;
-		}
+		_ib_child_replace(old, node, old->parent, root);
 		old->child[IB_LEFT]->parent = node;
 		if (old->child[IB_RIGHT]) {
 			old->child[IB_RIGHT]->parent = node;
@@ -235,11 +227,7 @@ void ib_node_erase(struct ib_node *node, struct ib_root *root)
 		parent = node->parent;
 		color = node->color;
 		/* printf("delete %d child=%d\n", ib_value(node), child? 1:0); */
-		if (parent) {
-			parent->child[(parent->child[1] == node)? 1 : 0] = child;
-		}	else {
-			root->node = child;
-		}
+		_ib_child_replace(node, child, parent, root);
 	}
 	/* if node has only one child, it must be red due to rule 5,
 	 * and this node must be black due to rule 4.
