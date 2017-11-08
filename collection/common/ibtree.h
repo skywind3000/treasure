@@ -185,6 +185,8 @@ void *ib_tree_add(struct ib_tree *tree, void *data);
 void ib_tree_remove(struct ib_tree *tree, void *data);
 void ib_tree_replace(struct ib_tree *tree, void *victim, void *newdata);
 
+void ib_tree_clear(struct ib_tree *tree, void (*destroy)(void *data));
+
 
 #ifdef __cplusplus
 }

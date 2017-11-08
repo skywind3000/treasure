@@ -298,9 +298,7 @@ void test3()
 	ib_node_find(&tree.root, x_key, compare2, x_res, index);
 	printf("%d %d\n", ib_value(x_res), index);
 	ib_node_add(&tree.root, y_key, compare2, x_res);
-	printf("dup: %x\n", x_res);
-	ib_node_add(&tree.root, y_key, compare2, x_res);
-	printf("dup: %x\n", x_res);
+	ib_tree_add(&tree, new_mynode(8));
 	print_t(tree.root.node);
 }
 

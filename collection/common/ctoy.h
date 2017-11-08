@@ -7,6 +7,11 @@
 
 #include "ibtree.h"
 
+typedef struct {
+	void *key;
+	void *val;
+	struct ib_node node;
+};
 
 typedef struct {
 	struct ib_tree tree;

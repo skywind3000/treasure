@@ -187,7 +187,8 @@ void ib_node_erase(struct ib_node *node, struct ib_root *root)
 	ASSERTION(node);
 	if (node->child[0] && node->child[1]) {
 		struct ib_node *old = node;
-		struct ib_node *left = node->child[IB_RIGHT];
+		struct ib_node *left;
+		node = node->child[IB_RIGHT];
 		while ((left = node->child[IB_LEFT]) != NULL)
 			node = left;
 		child = node->child[IB_RIGHT];
@@ -384,6 +385,18 @@ void ib_tree_replace(struct ib_tree *tree, void *victim, void *newdata)
 	struct ib_node *newnode = IB_DATA2NODE(newdata, tree->offset);
 	ib_node_replace(vicnode, newnode, &tree->root);
 	vicnode->parent = vicnode;
+}
+
+
+void ib_tree_clear(struct ib_tree *tree, void (*destroy)(void *data))
+{
+	while (1) {
+		void *data;
+		if (tree->root.node == NULL) break;
+		data = IB_NODE2DATA(tree->root.node, tree->offset);
+		ib_tree_remove(tree, data);
+		if (destroy) destroy(data);
+	}
 }
 
 
