@@ -176,6 +176,7 @@ void *ib_tree_last(struct ib_tree *tree);
 void *ib_tree_next(struct ib_tree *tree, void *data);
 void *ib_tree_prev(struct ib_tree *tree, void *data);
 
+/* require a temporary user structure (data) which contains the key */
 void *ib_tree_find(struct ib_tree *tree, const void *data);
 void *ib_tree_nearest(struct ib_tree *tree, const void *data);
 

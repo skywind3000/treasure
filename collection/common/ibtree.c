@@ -71,19 +71,16 @@ _ib_node_rotate(struct ib_node *node, struct ib_root *root, int LEFT)
 {
 	int RIGHT = 1 - LEFT;
 	struct ib_node *right = node->child[RIGHT];
+	struct ib_node *parent = node->parent;
 	node->child[RIGHT] = right->child[LEFT];
 	ASSERTION(node && right);
 	if (right->child[LEFT]) 
 		right->child[LEFT]->parent = node;
 	right->child[LEFT] = node;
-	right->parent = node->parent;
-	if (right->parent) {
-		if (node == node->parent->child[LEFT]) 
-			node->parent->child[LEFT] = right;
-		else
-			node->parent->child[RIGHT] = right;
-	}
-	else {
+	right->parent = parent;
+	if (parent) {
+		parent->child[(node == parent->child[1])? 1 : 0] = right;
+	}	else {
 		root->node = right;
 	}
 	node->parent = right;
@@ -91,7 +88,7 @@ _ib_node_rotate(struct ib_node *node, struct ib_root *root, int LEFT)
 }
 
 static inline struct ib_node*
-_ib_node_update_insert(struct ib_root *root,
+_ib_node_insert_update(struct ib_root *root,
 		struct ib_node *node, struct ib_node *parent, 
 		struct ib_node *gparent, int LEFT)
 {
@@ -128,10 +125,10 @@ void ib_node_insert_color(struct ib_node *node, struct ib_root *root)
 		if (parent->color != IB_RED) break;
 		gparent = parent->parent;
 		if (parent == gparent->child[0]) {
-			node = _ib_node_update_insert(root, node, parent, gparent, 0);
+			node = _ib_node_insert_update(root, node, parent, gparent, 0);
 		}
 		else {
-			node = _ib_node_update_insert(root, node, parent, gparent, 1);
+			node = _ib_node_insert_update(root, node, parent, gparent, 1);
 		}
 	}
 	root->node->color = IB_BLACK;
@@ -194,7 +191,6 @@ _ib_node_rebalance(struct ib_node *parent, struct ib_root *root)
 	}
 }
 
-
 void ib_node_erase(struct ib_node *node, struct ib_root *root)
 {
 	struct ib_node *child, *parent;
@@ -233,6 +229,7 @@ void ib_node_erase(struct ib_node *node, struct ib_root *root)
 	 * and this node must be black due to rule 4.
 	 */
 	if (child) {
+		ASSERTION(child->color == IB_RED);
 		child->color = IB_BLACK;
 		child->parent = parent;
 	}
