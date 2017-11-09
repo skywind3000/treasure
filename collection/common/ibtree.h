@@ -10,10 +10,12 @@
 #ifndef __IBTREE_H__
 #define __IBTREE_H__
 
-#include <stddef.h>
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
+#ifndef HAVE_NOT_STDDEF_H
+#include <stddef.h>
 #endif
 
 
