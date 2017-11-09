@@ -58,12 +58,10 @@ static inline void
 _ib_child_replace(struct ib_node *oldnode, struct ib_node *newnode, 
 		struct ib_node *parent, struct ib_root *root) 
 {
-	if (parent) {
+	if (parent)
 		parent->child[(parent->child[1] == oldnode)? 1 : 0] = newnode;
-	}
-	else {
+	else 
 		root->node = newnode;
-	}
 }
 
 static inline struct ib_node *
@@ -78,11 +76,7 @@ _ib_node_rotate(struct ib_node *node, struct ib_root *root, int LEFT)
 		right->child[LEFT]->parent = node;
 	right->child[LEFT] = node;
 	right->parent = parent;
-	if (parent) {
-		parent->child[(node == parent->child[1])? 1 : 0] = right;
-	}	else {
-		root->node = right;
-	}
+	_ib_child_replace(node, right, parent, root);
 	node->parent = right;
 	return right;
 }
@@ -152,9 +146,8 @@ _ib_node_erase_update(struct ib_node **child, struct ib_node *parent,
 		((!sibling->child[1]) || sibling->child[1]->color == IB_BLACK)) {
 		sibling->color = IB_RED;
 		node = parent;
-		parent = node->parent;
 		child[0] = node;
-		return parent;
+		return node->parent;
 	}
 	if ((!sibling->child[RIGHT]) || sibling->child[RIGHT]->color != IB_RED) {
 		struct ib_node *sl = sibling->child[LEFT];
@@ -176,8 +169,7 @@ static inline void
 _ib_node_rebalance(struct ib_node *parent, struct ib_root *root)
 {
 	struct ib_node *node = NULL;
-	while (1) {
-		if (parent == NULL) break;
+	while (parent) {
 		if (node != NULL && node->color == IB_RED) break;
 		if (parent->child[0] == node) {
 			parent = _ib_node_erase_update(&node, parent, root, 0);
@@ -225,8 +217,8 @@ void ib_node_erase(struct ib_node *node, struct ib_root *root)
 		/* printf("delete %d child=%d\n", ib_value(node), child? 1:0); */
 		_ib_child_replace(node, child, parent, root);
 	}
-	/* if node has only one child, it must be red due to rule 5,
-	 * and this node must be black due to rule 4.
+	/* if node has only one child, it must be red, and this node must 
+	 * be black, therefore just replace the node with its child.
 	 */
 	if (child) {
 		ASSERTION(child->color == IB_RED);
@@ -242,11 +234,7 @@ void ib_node_replace(struct ib_node *victim, struct ib_node *newnode,
 		struct ib_root *root)
 {
 	struct ib_node *parent = victim->parent;
-	if (parent) {
-		parent->child[(parent->child[1] == victim)? 1 : 0] = newnode;
-	}	else {
-		root->node = newnode;
-	}
+	_ib_child_replace(victim, newnode, parent, root);
 	if (victim->child[0]) victim->child[0]->parent = newnode;
 	if (victim->child[1]) victim->child[1]->parent = newnode;
 	newnode->child[0] = victim->child[0];
