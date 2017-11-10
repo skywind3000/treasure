@@ -54,9 +54,12 @@
 
 #define PRINTT_MAX_STR_SIZE		1024
 
-#define PRINTT_NODE_CHILD_LEFT		0
-#define PRINTT_NODE_CHILD_RIGHT		1
+#define PRINTT_CHILD_LEFT		0
+#define PRINTT_CHILD_RIGHT		1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void print_tree(void *node,
 		void (*get_text)(void *node, char *text),
@@ -71,6 +74,11 @@ void print_tree_file(void *node,
 		void (*get_text)(void *node, char *text),
 		void* (*get_child)(void *node, int which),
 		const char *filename);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif
 
