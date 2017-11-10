@@ -5,17 +5,28 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ibtree.h"
+#include "imembase.h"
+
+
 
 typedef struct {
+	union {
+		struct ILISTHEAD list;
+		struct ib_node rb;
+	}	node;
 	void *key;
 	void *val;
-	struct ib_node node;
-};
+	iulong hash;
+	ilong pos;
+}	ib_hash_entry;
 
 typedef struct {
-	struct ib_tree tree;
-}	ic_dict_rb;
+	struct ILISTHEAD list;
+	struct ib_root root;
+	size_t size;
+	unsigned int treeify;
+}	ib_hash_index;
+
 
 #endif
 
