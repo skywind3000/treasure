@@ -1,6 +1,10 @@
 #include "ibtree.h"
 
 
+/*--------------------------------------------------------------------*/
+/* binary search tree - node manipulation                             */
+/*--------------------------------------------------------------------*/
+
 /* LEFT is 0: walk towards left, and 1 for right */
 static inline struct ib_node *_ib_node_walk(struct ib_node *node, int LEFT)
 {
@@ -64,6 +68,10 @@ _ib_child_replace(struct ib_node *oldnode, struct ib_node *newnode,
 		root->node = newnode;
 }
 
+#if 1
+int ib_node_rotate_times = 0;
+#endif
+
 static inline struct ib_node *
 _ib_node_rotate(struct ib_node *node, struct ib_root *root, int LEFT)
 {
@@ -71,6 +79,9 @@ _ib_node_rotate(struct ib_node *node, struct ib_root *root, int LEFT)
 	struct ib_node *right = node->child[RIGHT];
 	struct ib_node *parent = node->parent;
 	node->child[RIGHT] = right->child[LEFT];
+#if 0
+	ib_node_rotate_times++;
+#endif
 	ASSERTION(node && right);
 	if (right->child[LEFT]) 
 		right->child[LEFT]->parent = node;
@@ -81,6 +92,24 @@ _ib_node_rotate(struct ib_node *node, struct ib_root *root, int LEFT)
 	return right;
 }
 
+
+void ib_node_replace(struct ib_node *victim, struct ib_node *newnode,
+		struct ib_root *root)
+{
+	struct ib_node *parent = victim->parent;
+	_ib_child_replace(victim, newnode, parent, root);
+	if (victim->child[0]) victim->child[0]->parent = newnode;
+	if (victim->child[1]) victim->child[1]->parent = newnode;
+	newnode->child[0] = victim->child[0];
+	newnode->child[1] = victim->child[1];
+	newnode->parent = victim->parent;
+	newnode->color = victim->color;
+}
+
+
+/*--------------------------------------------------------------------*/
+/* rbree - node manipulation                                          */
+/*--------------------------------------------------------------------*/
 static inline struct ib_node*
 _ib_node_insert_update(struct ib_root *root,
 		struct ib_node *node, struct ib_node *parent, 
@@ -109,7 +138,7 @@ _ib_node_insert_update(struct ib_root *root,
 	return node;
 }
 
-void ib_node_insert_color(struct ib_node *node, struct ib_root *root)
+void ib_rb_node_post_insert(struct ib_node *node, struct ib_root *root)
 {
 	node->color = IB_RED;
 	while (1) {
@@ -183,7 +212,7 @@ _ib_node_rebalance(struct ib_node *parent, struct ib_root *root)
 	}
 }
 
-void ib_node_erase(struct ib_node *node, struct ib_root *root)
+void ib_rb_node_erase(struct ib_node *node, struct ib_root *root)
 {
 	struct ib_node *child, *parent;
 	unsigned int color;
@@ -197,6 +226,9 @@ void ib_node_erase(struct ib_node *node, struct ib_root *root)
 		child = node->child[IB_RIGHT];
 		parent = node->parent;
 		color = node->color;
+		if (child) {
+			child->parent = parent;
+		}
 		_ib_child_replace(node, child, parent, root);
 		if (node->parent == old)
 			parent = node;
@@ -216,6 +248,9 @@ void ib_node_erase(struct ib_node *node, struct ib_root *root)
 		color = node->color;
 		/* printf("delete %d child=%d\n", ib_value(node), child? 1:0); */
 		_ib_child_replace(node, child, parent, root);
+		if (child) {
+			child->parent = parent;
+		}
 	}
 	/* if node has only one child, it must be red, and this node must 
 	 * be black, therefore just replace the node with its child.
@@ -223,25 +258,120 @@ void ib_node_erase(struct ib_node *node, struct ib_root *root)
 	if (child) {
 		ASSERTION(child->color == IB_RED);
 		child->color = IB_BLACK;
-		child->parent = parent;
 	}
 	else if (color == IB_BLACK && parent) {
 		_ib_node_rebalance(parent, root);
 	}
 }
 
-void ib_node_replace(struct ib_node *victim, struct ib_node *newnode,
-		struct ib_root *root)
+
+/*--------------------------------------------------------------------*/
+/* avl tree                                                           */
+/*--------------------------------------------------------------------*/
+
+static inline int IB_MAX(int x, int y) 
 {
-	struct ib_node *parent = victim->parent;
-	_ib_child_replace(victim, newnode, parent, root);
-	if (victim->child[0]) victim->child[0]->parent = newnode;
-	if (victim->child[1]) victim->child[1]->parent = newnode;
-	newnode->child[0] = victim->child[0];
-	newnode->child[1] = victim->child[1];
-	newnode->parent = victim->parent;
-	newnode->color = victim->color;
+	return (x < y)? y : x;
 }
+
+static inline void
+_ib_avl_node_height_update(struct ib_node *node)
+{
+	int h0 = IB_AVL_CHILD_HEIGHT(node, 0);
+	int h1 = IB_AVL_CHILD_HEIGHT(node, 1);
+	IB_AVL_HEIGHT(node) = IB_MAX(h0, h1) + 1;
+}
+
+static inline struct ib_node *
+_ib_avl_node_fix(struct ib_node *node, struct ib_root *root, int LEFT)
+{
+	int RIGHT = 1 - LEFT;
+	struct ib_node *right = node->child[RIGHT];
+	int rh0, rh1;
+	ASSERTION(right);
+	rh0 = IB_AVL_CHILD_HEIGHT(right, LEFT);
+	rh1 = IB_AVL_CHILD_HEIGHT(right, RIGHT);
+	if (rh0 > rh1) {
+		right = _ib_node_rotate(right, root, RIGHT);
+		_ib_avl_node_height_update(right->child[RIGHT]);
+		_ib_avl_node_height_update(right);
+		_ib_avl_node_height_update(node);
+	}
+	node = _ib_node_rotate(node, root, LEFT);
+	_ib_avl_node_height_update(node->child[LEFT]);
+	_ib_avl_node_height_update(node);
+	return node;
+}
+
+static inline void 
+_ib_avl_node_rebalance(struct ib_node *node, struct ib_root *root)
+{
+	while (node) {
+		int h0 = (int)IB_AVL_CHILD_HEIGHT(node, 0);
+		int h1 = (int)IB_AVL_CHILD_HEIGHT(node, 1);
+		int height = IB_MAX(h0, h1) + 1;
+		int diff = h0 - h1;
+		if (IB_AVL_HEIGHT(node) != height) {
+			IB_AVL_HEIGHT(node) = height;
+		}
+		if (diff <= -2) {
+			node = _ib_avl_node_fix(node, root, 0);
+		}
+		else if (diff >= 2) {
+			node = _ib_avl_node_fix(node, root, 1);
+		}
+		node = node->parent;
+	}
+}
+
+void ib_avl_node_post_insert(struct ib_node *node, struct ib_root *root)
+{
+	IB_AVL_HEIGHT(node) = 0;
+	_ib_avl_node_rebalance(node, root);
+}
+
+void ib_avl_node_erase(struct ib_node *node, struct ib_root *root)
+{
+	struct ib_node *child, *parent;
+	ASSERTION(node);
+	if (node->child[0] && node->child[1]) {
+		struct ib_node *old = node;
+		struct ib_node *left;
+		node = node->child[IB_RIGHT];
+		while ((left = node->child[IB_LEFT]) != NULL)
+			node = left;
+		child = node->child[IB_RIGHT];
+		parent = node->parent;
+		if (child) {
+			child->parent = parent;
+		}
+		_ib_child_replace(node, child, parent, root);
+		if (node->parent == old)
+			parent = node;
+		node->child[0] = old->child[0];
+		node->child[1] = old->child[1];
+		node->parent = old->parent;
+		node->color = old->color;
+		_ib_child_replace(old, node, old->parent, root);
+		ASSERTION(old->child[IB_LEFT]);
+		old->child[IB_LEFT]->parent = node;
+		if (old->child[IB_RIGHT]) {
+			old->child[IB_RIGHT]->parent = node;
+		}
+	}
+	else {
+		child = node->child[(node->child[0] == NULL)? 1 : 0];
+		parent = node->parent;
+		_ib_child_replace(node, child, parent, root);
+		if (child) {
+			child->parent = parent;
+		}
+	}
+	if (parent) {
+		_ib_avl_node_rebalance(parent, root);
+	}
+}
+
 
 
 /*--------------------------------------------------------------------*/
@@ -356,7 +486,7 @@ void *ib_tree_add(struct ib_tree *tree, void *data)
 		}
 	}
 	ib_node_link(node, parent, link);
-	ib_node_insert_color(node, &tree->root);
+	ib_rb_node_post_insert(node, &tree->root);
 	tree->count++;
 	return NULL;
 }
@@ -366,7 +496,7 @@ void ib_tree_remove(struct ib_tree *tree, void *data)
 {
 	struct ib_node *node = IB_DATA2NODE(data, tree->offset);
 	if (!ib_node_empty(node)) {
-		ib_node_erase(node, &tree->root);
+		ib_rb_node_erase(node, &tree->root);
 		node->parent = node;
 		tree->count--;
 	}
