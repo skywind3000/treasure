@@ -1,3 +1,11 @@
+//=====================================================================
+//
+// printt.c - print binary tree to console / file
+//
+// Created by skywind on 2017/11/10
+// Last change: 2017/11/10 22:28:12
+//
+//=====================================================================
 #include "printt.h"
 
 #include <stdio.h>
@@ -6,34 +14,12 @@
 #include <assert.h>
 
 
-#ifndef INLINE
-#if defined(__GNUC__)
-
-#if (__GNUC__ > 3) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 1))
-#define INLINE         __inline__ __attribute__((always_inline))
-#else
-#define INLINE         __inline__
-#endif
-
-#elif (defined(_MSC_VER) || defined(__BORLANDC__) || defined(__WATCOMC__))
-#define INLINE __inline
-#else
-#define INLINE 
-#endif
-#endif
-
-#if (!defined(__cplusplus)) && (!defined(inline))
-#define inline INLINE
-#endif
-
-
-
 //---------------------------------------------------------------------
 // tree driver
 //---------------------------------------------------------------------
 typedef struct {
-	void (*get_text)(const void *node, char *text);
-	void* (*get_child)(const void *node, int which);
+	void (*get_text)(void *node, char *text);
+	void* (*get_child)(void *node, int which);
 	void (*output)(const char *line);
 	int paren;
 	char text[PRINTT_MAX_STR_SIZE + 8];
@@ -148,11 +134,6 @@ void text_area_rect(text_area_t *ta, int x, int y, int w, int h, char c)
 			text_area_putc(ta, x + i, y + j, c);
 		}
 	}
-}
-
-void text_area_fill(text_area_t *ta, char c) 
-{
-	text_area_rect(ta, 0, 0, ta->w, ta->h, c);
 }
 
 int text_area_padding(const text_area_t *ta, int side)
@@ -273,8 +254,8 @@ text_area_t *tree_print_node(tree_print_t *tp, void *node)
 // print_tree 
 //---------------------------------------------------------------------
 void print_tree(void *node,
-		void (*get_text)(const void *node, char *text),
-		void* (*get_child)(const void *node, int which),
+		void (*get_text)(void *node, char *text),
+		void* (*get_child)(void *node, int which),
 		void (*output)(const char *line))
 {
 	tree_print_t *tp = (tree_print_t*)malloc(sizeof(tree_print_t));
@@ -308,9 +289,13 @@ void print_tree(void *node,
 }
 
 
+
+//---------------------------------------------------------------------
+// print to console
+//---------------------------------------------------------------------
 void print_tree_console(void *node,
-		void (*get_text)(const void *node, char *text),
-		void* (*get_child)(const void *node, int which))
+		void (*get_text)(void *node, char *text),
+		void* (*get_child)(void *node, int which))
 {
 	print_tree(node, get_text, get_child, NULL);
 }
@@ -325,8 +310,8 @@ static void _print_tree_output_file(const char *line)
 }
 
 void print_tree_file(void *node,
-		void (*get_text)(const void *node, char *text),
-		void* (*get_child)(const void *node, int which),
+		void (*get_text)(void *node, char *text),
+		void* (*get_child)(void *node, int which),
 		const char *filename)
 {
 	FILE *fp = fopen(filename, "w");
@@ -339,77 +324,6 @@ void print_tree_file(void *node,
 	}
 }
 
-
-//---------------------------------------------------------------------
-// testing case
-//---------------------------------------------------------------------
-#if 1
-
-#include "ibtree.h"
-
-#define ib_value(node) (((int*)((char*)node + sizeof(struct ib_node)))[0])
-
-void *my_get_child(const void *node, int n) {
-	struct ib_node *p = (struct ib_node*)node;
-	return p->child[n];
-}
-
-void my_get_text(const void *node, char *text) {
-	sprintf(text, "%d", ib_value(node));
-}
-
-struct ib_node *new_node(int value, int color, struct ib_node *left, struct ib_node *right)
-{
-	struct ib_node *node = (struct ib_node*)malloc(sizeof(struct ib_node) + sizeof(int));
-	node->parent = NULL;
-	node->color = color;
-	node->child[0] = left;
-	node->child[1] = right;
-	if (left) left->parent = node;
-	if (right) right->parent = node;
-	ib_value(node) = value;
-	return node;
-}
-
-
-void test1()
-{
-	text_area_t *ta = text_area_new(20, 10);
-	printf("new textarea: %d x %d\n", ta->w, ta->h);
-	text_area_puts(ta, 2, 3, "Hello, World !! 01234567890987\nABCDE\nFF");
-	text_area_print(ta);
-	text_area_delete(ta);
-}
-
-void test2()
-{
-	struct ib_node *n28 = new_node(28, 0, NULL, NULL);
-	struct ib_node *n25 = new_node(25, 1, NULL, n28);
-	struct ib_node *n40 = new_node(40, 1, NULL, NULL);
-	struct ib_node *n30 = new_node(30, 0, n25, n40);
-	struct ib_node *n10 = new_node(10, 1, NULL, NULL);
-	struct ib_node *n20 = new_node(20, 1, n10, n30);
-	struct ib_node *n55 = new_node(55, 0, NULL, NULL);
-	struct ib_node *n70 = new_node(70, 0, NULL, NULL);
-	struct ib_node *n60 = new_node(60, 1, n55, n70);
-	struct ib_node *n90 = new_node(90, 0, NULL, NULL);
-	struct ib_node *n98 = new_node(98, 0, NULL, NULL);
-	struct ib_node *n95 = new_node(95, 1, n90, n98);
-	struct ib_node *n80 = new_node(80, 1, n60, n95);
-	struct ib_node *n50 = new_node(50, 1, n20, n80);
-	struct ib_root root;
-	root.node = n50;
-	print_tree_console(n50, my_get_text, my_get_child);
-}
-
-int main(void)
-{
-	test2();
-	return 0;
-}
-
-
-#endif
 
 
 
