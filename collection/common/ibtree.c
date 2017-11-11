@@ -1,9 +1,9 @@
 #include "ibtree.h"
 
 
-/*--------------------------------------------------------------------*/
-/* binary search tree - node manipulation                             */
-/*--------------------------------------------------------------------*/
+/*====================================================================*/
+/* Binary Search Tree                                                 */
+/*====================================================================*/
 
 /* LEFT is 0: walk towards left, and 1 for right */
 static inline struct ib_node *_ib_node_walk(struct ib_node *node, int LEFT)
@@ -110,6 +110,7 @@ void ib_node_replace(struct ib_node *victim, struct ib_node *newnode,
 /*--------------------------------------------------------------------*/
 /* rbree - node manipulation                                          */
 /*--------------------------------------------------------------------*/
+
 static inline struct ib_node*
 _ib_node_insert_update(struct ib_root *root,
 		struct ib_node *node, struct ib_node *parent, 
@@ -138,7 +139,7 @@ _ib_node_insert_update(struct ib_root *root,
 	return node;
 }
 
-void ib_rb_node_post_insert(struct ib_node *node, struct ib_root *root)
+void ib_node_post_insert(struct ib_node *node, struct ib_root *root)
 {
 	node->color = IB_RED;
 	while (1) {
@@ -212,7 +213,7 @@ _ib_node_rebalance(struct ib_node *parent, struct ib_root *root)
 	}
 }
 
-void ib_rb_node_erase(struct ib_node *node, struct ib_root *root)
+void ib_node_erase(struct ib_node *node, struct ib_root *root)
 {
 	struct ib_node *child, *parent;
 	unsigned int color;
@@ -266,7 +267,7 @@ void ib_rb_node_erase(struct ib_node *node, struct ib_root *root)
 
 
 /*--------------------------------------------------------------------*/
-/* avl tree                                                           */
+/* avl - node manipulation                                            */
 /*--------------------------------------------------------------------*/
 
 static inline int IB_MAX(int x, int y) 
@@ -486,7 +487,7 @@ void *ib_tree_add(struct ib_tree *tree, void *data)
 		}
 	}
 	ib_node_link(node, parent, link);
-	ib_rb_node_post_insert(node, &tree->root);
+	ib_node_post_insert(node, &tree->root);
 	tree->count++;
 	return NULL;
 }
@@ -496,7 +497,7 @@ void ib_tree_remove(struct ib_tree *tree, void *data)
 {
 	struct ib_node *node = IB_DATA2NODE(data, tree->offset);
 	if (!ib_node_empty(node)) {
-		ib_rb_node_erase(node, &tree->root);
+		ib_node_erase(node, &tree->root);
 		node->parent = node;
 		tree->count--;
 	}
