@@ -314,7 +314,11 @@ _ib_avl_node_rebalance(struct ib_node *node, struct ib_root *root)
 		int diff = h0 - h1;
 		if (IB_AVL_HEIGHT(node) != height) {
 			IB_AVL_HEIGHT(node) = height;
+		}	
+		else if (diff >= -1 && diff <= 1) {
+			break;
 		}
+		/* printf("rebalance %d\n", ib_value(node)); */
 		if (diff <= -2) {
 			node = _ib_avl_node_fix(node, root, 0);
 		}
@@ -322,6 +326,7 @@ _ib_avl_node_rebalance(struct ib_node *node, struct ib_root *root)
 			node = _ib_avl_node_fix(node, root, 1);
 		}
 		node = node->parent;
+		/* printf("parent %d\n", (!node)? -1 : ib_value(node)); */
 	}
 }
 
@@ -478,7 +483,7 @@ void *ib_tree_add(struct ib_tree *tree, void *data)
 		int hr;
 		parent = link[0];
 		pd = IB_NODE2DATA(parent, offset);
-		hr = compare(node, pd);
+		hr = compare(data, pd);
 		if (hr == 0) {
 			return pd;
 		}	

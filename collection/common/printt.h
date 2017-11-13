@@ -50,7 +50,7 @@
 #ifndef _PRINTT_H__
 #define _PRINTT_H__
 
-#include "ibtree.h"
+#include <stddef.h>
 
 #define PRINTT_MAX_STR_SIZE		1024
 
