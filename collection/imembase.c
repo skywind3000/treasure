@@ -199,6 +199,8 @@ size_t iv_pop(struct IVECTOR *v, void *data, size_t size)
 int iv_insert(struct IVECTOR *v, size_t pos, const void *data, size_t size)
 {
 	size_t current = v->size;
+	if (pos > current) 
+		return -1;
 	if (iv_resize(v, current + size) != 0)
 		return -1;
 	memmove(v->data + pos + size, v->data + pos, size);
