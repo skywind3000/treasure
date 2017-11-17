@@ -203,8 +203,8 @@ int iv_insert(struct IVECTOR *v, size_t pos, const void *data, size_t size)
 		return -1;
 	if (iv_resize(v, current + size) != 0)
 		return -1;
-	if (pos < v->size) {
-		memmove(v->data + pos + size, v->data + pos, v->size - pos);
+	if (pos < current) {
+		memmove(v->data + pos + size, v->data + pos, current - pos);
 	}
 	if (data != NULL) 
 		memcpy(v->data + pos, data, size);
