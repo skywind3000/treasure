@@ -119,7 +119,7 @@ void iv_destroy(struct IVECTOR *v)
 	v->capacity = 0;
 }
 
-int iv_truncate(struct IVECTOR *v, size_t newcap)
+int iv_capacity(struct IVECTOR *v, size_t newcap)
 {
 	if (newcap == v->capacity)
 		return 0;
@@ -163,7 +163,7 @@ int iv_resize(struct IVECTOR *v, size_t newsize)
 				capacity = capacity * 2;
 			}
 		}
-		if (iv_truncate(v, capacity) != 0) {
+		if (iv_capacity(v, capacity) != 0) {
 			return -1;
 		}
 	}
@@ -173,7 +173,7 @@ int iv_resize(struct IVECTOR *v, size_t newsize)
 
 int iv_reserve(struct IVECTOR *v, size_t size)
 {
-	return iv_truncate(v, (size >= v->size)? size : v->size);
+	return iv_capacity(v, (size >= v->size)? size : v->size);
 }
 
 int iv_push(struct IVECTOR *v, const void *data, size_t size)
