@@ -1182,3 +1182,223 @@ void ib_tree_clear(struct ib_tree *tree, void (*destroy)(void *data))
 
 
 
+/*--------------------------------------------------------------------*/
+/* string                                                             */
+/*--------------------------------------------------------------------*/
+
+ib_string* ib_string_new(void)
+{
+	struct ib_string* str = (ib_string*)ikmem_malloc(sizeof(ib_string));
+	assert(str);
+	str->ptr = str->sso;
+	str->size = 0;
+	str->capacity = IB_STRING_SSO;
+	str->ptr[0] = 0;
+	return str;
+}
+
+
+void ib_string_delete(ib_string *str)
+{
+	assert(str);
+	if (str) {
+		if (str->ptr && str->ptr != str->sso) 
+			ikmem_free(str->ptr);
+		str->ptr = NULL;
+		str->size = str->capacity = 0;
+	}
+	ikmem_free(str);
+}
+
+ib_string* ib_string_new_size(const char *text, int size)
+{
+	struct ib_string *str = ib_string_new();
+	size = (size > 0)? size : 0;
+	if (size > 0 && text) {
+		ib_string_resize(str, size);
+		memcpy(str->ptr, text, size);
+	}
+	return str;
+}
+
+ib_string* ib_string_new_from(const char *text)
+{
+	return ib_string_new_size(text, (text)? ((int)strlen(text)) : 0);
+}
+
+static void _ib_string_set_capacity(ib_string *str, int capacity)
+{
+	assert(str);
+	assert(capacity >= 0);
+	if (capacity <= IB_STRING_SSO) {
+		if (str->ptr != str->sso) {
+			if (str->size > 0) 
+				memcpy(str->sso, str->ptr, str->size);
+			ikmem_free(str->ptr);
+			str->ptr = str->sso;
+			str->capacity = IB_STRING_SSO;
+		}
+	}
+	else {
+		char *ptr = ikmem_malloc(capacity + 2);
+		assert(ptr);
+		if (str->size > 0)
+			memcpy(ptr, str->ptr, str->size);
+		if (str->ptr != str->sso)
+			ikmem_free(str->ptr);
+		str->ptr = ptr;
+		str->capacity = capacity;
+	}
+	if (str->size > str->capacity)
+		str->size = str->capacity;
+	str->ptr[str->size] = 0;
+}
+
+ib_string* ib_string_resize(ib_string *str, int newsize)
+{
+	assert(str && newsize >= 0);
+	if (newsize > str->capacity) {
+		int capacity = str->capacity * 2;
+		if (capacity < newsize) {
+			while (capacity < newsize) {
+				capacity = capacity * 2;
+			}
+		}
+		_ib_string_set_capacity(str, capacity);
+	}
+	str->size = newsize;
+	str->ptr[str->size] = 0;
+	return str;
+}
+
+ib_string* ib_string_reserve(ib_string *str, int newsize)
+{
+	int size = (newsize >= str->size)? newsize : str->size;
+	_ib_string_set_capacity(str, size);
+	return str;
+}
+
+ib_string* ib_string_insert(ib_string *str, int pos, 
+		const void *data, int size)
+{
+	int current = str->size;
+	if (pos < 0 || pos > str->size)
+		return NULL;
+	ib_string_resize(str, str->size + size);
+	if (pos < current) {
+		memmove(str->ptr + pos + size, str->ptr + pos, current - pos);
+	}
+	if (data) {
+		memcpy(str->ptr + pos, data, size);
+	}
+	return str;
+}
+
+ib_string* ib_string_insert_c(ib_string *str, int pos, char c)
+{
+	int current = str->size;
+	if (pos < 0 || pos > str->size)
+		return NULL;
+	ib_string_resize(str, str->size + 1);
+	if (pos < current) {
+		memmove(str->ptr + pos + 1, str->ptr + pos, current - pos);
+	}
+	str->ptr[pos] = c;
+	return str;
+}
+
+ib_string* ib_string_erase(ib_string *str, int pos, int size)
+{
+	int current = str->size;
+	if (pos >= current) return 0;
+	if (pos + size >= current) size = current - pos;
+	if (size == 0) return 0;
+	memmove(str->ptr + pos, str->ptr + pos + size, current - pos - size);
+	return ib_string_resize(str, current - size);
+}
+
+int ib_string_compare(const struct ib_string *a, const struct ib_string *b)
+{
+	int minsize = (a->size < b->size)? a->size : b->size;
+	int hr = memcmp(a->ptr, b->ptr, minsize);
+	if (hr < 0) return -1;
+	else if (hr > 0) return 1;
+	if (a->size < b->size) return -1;
+	else if (a->size > b->size) return 1;
+	return 0;
+}
+
+
+ib_string* ib_string_assign(ib_string *str, const char *src)
+{
+	return ib_string_assign_size(str, src, (int)strlen(src));
+}
+
+ib_string* ib_string_assign_size(ib_string *str, const char *src, int size)
+{
+	assert(size >= 0);
+	ib_string_resize(str, size);
+	if (src) {
+		memcpy(str->ptr, src, size);
+	}
+	return str;
+}
+
+
+ib_string* ib_string_append(ib_string *str, const char *src)
+{
+	return ib_string_append_size(str, src, (int)src);
+}
+
+
+ib_string* ib_string_append_size(ib_string *str, const char *src, int size)
+{
+	return ib_string_insert(str, str->size, src, size);
+}
+
+ib_string* ib_string_append_c(ib_string *str, char c)
+{
+	ib_string_resize(str, str->size + 1);
+	str->ptr[str->size - 1] = c;
+	return str;
+}
+
+ib_string* ib_string_prepend(ib_string *str, const char *src)
+{
+	return ib_string_prepend_size(str, src, (int)strlen(src));
+}
+
+ib_string* ib_string_prepend_size(ib_string *str, const char *src, int size)
+{
+	return ib_string_insert(str, 0, src, size);
+}
+
+ib_string* ib_string_prepend_c(ib_string *str, char c)
+{
+	int current = str->size;
+	ib_string_resize(str, current + 1);
+	if (current > 0) {
+		memmove(str->ptr + 1, str->ptr, current);
+	}
+	str->ptr[0] = c;
+	return str;
+}
+
+ib_string* ib_string_rewrite(ib_string *str, int pos, const char *src)
+{
+	return ib_string_rewrite_size(str, pos, src, (int)strlen(src));
+}
+
+ib_string* ib_string_rewrite_size(ib_string *str, int pos, 
+		const char *src, int size)
+{
+	if (pos < 0) size += pos, pos = 0;
+	if (pos + size >= str->size) size = str->size - pos;
+	if (size <= 0) return str;
+	if (src) {
+		memcpy(str->ptr + pos, src, size);
+	}
+	return str;
+}
+
+
