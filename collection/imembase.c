@@ -203,7 +203,9 @@ int iv_insert(struct IVECTOR *v, size_t pos, const void *data, size_t size)
 		return -1;
 	if (iv_resize(v, current + size) != 0)
 		return -1;
-	memmove(v->data + pos + size, v->data + pos, size);
+	if (pos < v->size) {
+		memmove(v->data + pos + size, v->data + pos, v->size - pos);
+	}
 	if (data != NULL) 
 		memcpy(v->data + pos, data, size);
 	return 0;
@@ -876,7 +878,11 @@ void ib_node_replace(struct ib_node *victim, struct ib_node *newnode,
 
 static inline int IB_MAX(int x, int y) 
 {
-	return (x < y)? y : x;
+#if 1
+	return (x < y)? y : x;    /* this is faster with cmov on x86 */
+#else
+	return x - ((x - y) & ((x - y) >> (sizeof(int) * 8 - 1)));
+#endif
 }
 
 static inline void
