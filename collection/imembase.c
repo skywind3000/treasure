@@ -813,7 +813,7 @@ struct ib_node *ib_node_prev(struct ib_node *node)
 }
 
 static inline void 
-_avl_child_replace(struct ib_node *oldnode, struct ib_node *newnode, 
+_ib_child_replace(struct ib_node *oldnode, struct ib_node *newnode, 
 		struct ib_node *parent, struct ib_root *root) 
 {
 	if (parent) {
@@ -837,7 +837,7 @@ _ib_node_rotate_left(struct ib_node *node, struct ib_root *root)
 		right->left->parent = node;
 	right->left = node;
 	right->parent = parent;
-	_avl_child_replace(node, right, parent, root);
+	_ib_child_replace(node, right, parent, root);
 	node->parent = right;
 	return right;
 }
@@ -853,7 +853,7 @@ _ib_node_rotate_right(struct ib_node *node, struct ib_root *root)
 		left->right->parent = node;
 	left->right = node;
 	left->parent = parent;
-	_avl_child_replace(node, left, parent, root);
+	_ib_child_replace(node, left, parent, root);
 	node->parent = left;
 	return left;
 }
@@ -862,7 +862,7 @@ void ib_node_replace(struct ib_node *victim, struct ib_node *newnode,
 		struct ib_root *root)
 {
 	struct ib_node *parent = victim->parent;
-	_avl_child_replace(victim, newnode, parent, root);
+	_ib_child_replace(victim, newnode, parent, root);
 	if (victim->left) victim->left->parent = newnode;
 	if (victim->right) victim->right->parent = newnode;
 	newnode->left = victim->left;
@@ -992,14 +992,14 @@ void ib_node_erase(struct ib_node *node, struct ib_root *root)
 		if (child) {
 			child->parent = parent;
 		}
-		_avl_child_replace(node, child, parent, root);
+		_ib_child_replace(node, child, parent, root);
 		if (node->parent == old)
 			parent = node;
 		node->left = old->left;
 		node->right = old->right;
 		node->parent = old->parent;
 		node->height = old->height;
-		_avl_child_replace(old, node, old->parent, root);
+		_ib_child_replace(old, node, old->parent, root);
 		ASSERTION(old->left);
 		old->left->parent = node;
 		if (old->right) {
@@ -1012,7 +1012,7 @@ void ib_node_erase(struct ib_node *node, struct ib_root *root)
 		else
 			child = node->left;
 		parent = node->parent;
-		_avl_child_replace(node, child, parent, root);
+		_ib_child_replace(node, child, parent, root);
 		if (child) {
 			child->parent = parent;
 		}
@@ -1231,19 +1231,24 @@ static void _ib_string_set_capacity(ib_string *str, int capacity)
 	assert(str);
 	assert(capacity >= 0);
 	if (capacity <= IB_STRING_SSO) {
+		capacity = IB_STRING_SSO;
 		if (str->ptr != str->sso) {
-			if (str->size > 0) 
-				memcpy(str->sso, str->ptr, str->size);
+			if (str->size > 0) {
+				int csize = (str->size < capacity) ? str->size : capacity;
+				memcpy(str->sso, str->ptr, csize);
+			}
 			ikmem_free(str->ptr);
 			str->ptr = str->sso;
 			str->capacity = IB_STRING_SSO;
 		}
 	}
 	else {
-		char *ptr = ikmem_malloc(capacity + 2);
+		char *ptr = (char*)ikmem_malloc(capacity + 2);
+		int csize = (capacity < str->size) ? capacity : str->size;
 		assert(ptr);
-		if (str->size > 0)
-			memcpy(ptr, str->ptr, str->size);
+		if (csize > 0) {
+			memcpy(ptr, str->ptr, csize);
+		}
 		if (str->ptr != str->sso)
 			ikmem_free(str->ptr);
 		str->ptr = ptr;
@@ -1347,7 +1352,7 @@ ib_string* ib_string_assign_size(ib_string *str, const char *src, int size)
 
 ib_string* ib_string_append(ib_string *str, const char *src)
 {
-	return ib_string_append_size(str, src, (int)src);
+	return ib_string_append_size(str, src, (int)strlen(src));
 }
 
 
