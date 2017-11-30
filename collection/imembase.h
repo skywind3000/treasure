@@ -356,6 +356,11 @@ typedef struct ILISTHEAD ilist_head;
 #define ilist_splice_init(list, head) do {	\
 	ilist_splice(list, head);	ilist_init(list); } while (0)
 
+#define ilist_replace(oldnode, newnode) ( \
+	(newnode)->next = (oldnode)->next, \
+	(newnode)->next->prev = (newnode), \
+	(newnode)->prev = (oldnode)->prev, \
+	(newnode)->prev->next = (newnode))
 
 #ifdef _MSC_VER
 #pragma warning(disable:4311)
