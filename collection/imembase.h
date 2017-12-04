@@ -620,6 +620,7 @@ struct ib_fastbin
 {
 	size_t obj_size;
 	size_t page_size;
+	size_t maximum;
 	char *start;
 	char *endup;
 	void *next;
@@ -756,6 +757,32 @@ void ib_hash_clear(struct ib_hash_table *ht,
 
 /* re-index nbytes must be: sizeof(struct ib_hash_index) * n */
 void* ib_hash_swap(struct ib_hash_table *ht, void *index, size_t nbytes);
+
+
+/*--------------------------------------------------------------------*/
+/* fast inline search, compare function will be expanded inline here  */
+/*--------------------------------------------------------------------*/
+#define ib_hash_search(ht, srcnode, result, compare) do { \
+		iulong __hash = (srcnode)->hash; \
+		const void *__key = (srcnode)->key; \
+		struct ib_hash_index *__index = \
+			&((ht)->index[__hash & ((ht)->index_mask)]); \
+		struct ib_node *__anode = __index->avlroot.node; \
+		(result) = NULL; \
+		while (__anode) { \
+			struct ib_hash_node *__snode = \
+				IB_ENTRY(__anode, struct ib_hash_node, avlnode); \
+			iulong __shash = __snode->hash; \
+			if (__hash == __shash) { \
+				int __hc = (compare)(__key, __snode->key); \
+				if (__hc == 0) { (result) = __snode; break; } \
+				__anode = (__hc < 0)? __anode->left : __anode->right; \
+			} \
+			else { \
+				__anode = (__hash < __shash)? __anode->left:__anode->right;\
+			} \
+		} \
+	} while (0)
 
 
 

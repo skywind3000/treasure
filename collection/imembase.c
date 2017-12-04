@@ -1229,10 +1229,11 @@ void ib_fastbin_init(struct ib_fastbin *fb, size_t obj_size)
 	fb->pages = NULL;
 	fb->obj_size = (obj_size + align - 1) & (~(align - 1));
 	need = fb->obj_size * 32 + sizeof(void*) + 16;	
-	fb->page_size = 256;
+	fb->page_size = (align <= 2)? 8 : 32;
 	while (fb->page_size < need) {
 		fb->page_size *= 2;
 	}
+	fb->maximum = (align <= 2)? fb->page_size : 0x10000;
 }
 
 void ib_fastbin_destroy(struct ib_fastbin *fb)
@@ -1267,7 +1268,7 @@ void* ib_fastbin_new(struct ib_fastbin *fb)
 		lineptr = (lineptr + sizeof(void*) + 15) & (~15);
 		fb->start = (char*)lineptr;
 		fb->endup = (char*)page + fb->page_size;
-		if (fb->page_size < 0x10000) {
+		if (fb->page_size < fb->maximum) {
 			fb->page_size *= 2;
 		}
 	}
