@@ -533,6 +533,9 @@ static inline void ib_node_link(struct ib_node *node, struct ib_node *parent,
 void ib_node_post_insert(struct ib_node *node, struct ib_root *root);
 void ib_node_erase(struct ib_node *node, struct ib_root *root);
 
+/* avl nodes destroy: fast tear down the whole tree */
+struct ib_node* ib_node_tear(struct ib_root *root, struct ib_node **next);
+
 
 /*--------------------------------------------------------------------*/
 /* avl - node templates                                               */

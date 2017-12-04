@@ -1023,6 +1023,40 @@ void ib_node_erase(struct ib_node *node, struct ib_root *root)
 }
 
 
+/* avl nodes destroy: fast tear down the whole tree */
+struct ib_node* ib_node_tear(struct ib_root *root, struct ib_node **next)
+{
+	struct ib_node *node = *next;
+	struct ib_node *parent;
+	if (node == NULL) {
+		if (root->node == NULL) 
+			return NULL;
+		node = root->node;
+	}
+	/* sink down to the leaf */
+	while (1) {
+		if (node->left) node = node->left;
+		else if (node->right) node = node->right;
+		else break;
+	}
+	parent = node->parent;
+	if (parent == NULL) {
+		*next = NULL;
+		root->node = NULL;
+		return node;
+	}
+	if (parent->left == node) {
+		parent->left = NULL;
+	}	else {
+		parent->right = NULL;
+	}
+	node->parent = node;
+	node->height = 0;
+	*next = parent;
+	return node;
+}
+
+
 
 /*--------------------------------------------------------------------*/
 /* avltree - friendly interface                                       */
