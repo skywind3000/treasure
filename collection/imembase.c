@@ -1193,7 +1193,7 @@ void ib_fastbin_init(struct ib_fastbin *fb, size_t obj_size)
 	fb->endup = NULL;
 	fb->next = NULL;
 	fb->pages = NULL;
-	fb->obj_size = (obj_size + align - 1) & (~align);
+	fb->obj_size = (obj_size + align - 1) & (~(align - 1));
 	need = fb->obj_size * 32 + sizeof(void*) + 16;	
 	fb->page_size = 256;
 	while (fb->page_size < need) {
