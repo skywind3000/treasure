@@ -1039,6 +1039,7 @@ struct ib_node* ib_node_tear(struct ib_root *root, struct ib_node **next)
 		else if (node->right) node = node->right;
 		else break;
 	}
+	/* tear down one leaf */
 	parent = node->parent;
 	if (parent == NULL) {
 		*next = NULL;
@@ -1050,7 +1051,6 @@ struct ib_node* ib_node_tear(struct ib_root *root, struct ib_node **next)
 	}	else {
 		parent->right = NULL;
 	}
-	node->parent = node;
 	node->height = 0;
 	*next = parent;
 	return node;
