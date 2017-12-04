@@ -751,6 +751,7 @@ void ib_hash_replace(struct ib_hash_table *ht,
 void ib_hash_clear(struct ib_hash_table *ht,
 		void (*destroy)(struct ib_hash_node *node));
 
+/* re-index nbytes must be: sizeof(struct ib_hash_index) * n */
 void* ib_hash_swap(struct ib_hash_table *ht, void *index, size_t nbytes);
 
 
