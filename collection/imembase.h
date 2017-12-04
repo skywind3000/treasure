@@ -610,6 +610,28 @@ void ib_tree_replace(struct ib_tree *tree, void *victim, void *newdata);
 void ib_tree_clear(struct ib_tree *tree, void (*destroy)(void *data));
 
 
+/*--------------------------------------------------------------------*/
+/* fastbin - fixed size object allocator                              */
+/*--------------------------------------------------------------------*/
+struct ib_fastbin
+{
+	size_t obj_size;
+	size_t page_size;
+	char *start;
+	char *endup;
+	void *next;
+	void *pages;
+};
+
+
+#define IB_NEXT(ptr)  (((void**)(ptr))[0])
+
+void ib_fastbin_init(struct ib_fastbin *fb, size_t obj_size);
+void ib_fastbin_destroy(struct ib_fastbin *fb);
+
+void* ib_fastbin_new(struct ib_fastbin *fb);
+void ib_fastbin_del(struct ib_fastbin *fb, void *ptr);
+
 
 /*--------------------------------------------------------------------*/
 /* string                                                             */
@@ -660,6 +682,77 @@ ib_string* ib_string_rewrite_size(ib_string *str, int pos,
 		const char *src, int size);
 
 int ib_string_compare(const struct ib_string *a, const struct ib_string *b);
+
+
+/*--------------------------------------------------------------------*/
+/* static hash table (closed hash table with avlnode)                 */
+/*--------------------------------------------------------------------*/
+struct ib_hash_node
+{
+	struct ib_node avlnode;
+	void *key;
+	iulong hash;
+};
+
+struct ib_hash_index
+{
+	struct ILISTHEAD node;
+	struct ib_root avlroot;
+};
+
+#define IB_HASH_INIT_SIZE    8
+
+struct ib_hash_table
+{
+	size_t count;
+	size_t index_size;
+	size_t index_mask;
+	iulong (*hash)(const void *key);
+	int (*compare)(const void *key1, const void *key2);
+	struct ILISTHEAD head;
+	struct ib_hash_index *index;
+	struct ib_hash_index init[IB_HASH_INIT_SIZE];
+};
+
+
+void ib_hash_init(struct ib_hash_table *ht, 
+		iulong (*hash)(const void *key),
+		int (*compare)(const void *key1, const void *key2));
+
+struct ib_hash_node* ib_hash_node_first(struct ib_hash_table *ht);
+struct ib_hash_node* ib_hash_node_last(struct ib_hash_table *ht);
+
+struct ib_hash_node* ib_hash_node_next(struct ib_hash_table *ht, 
+		struct ib_hash_node *node);
+
+struct ib_hash_node* ib_hash_node_prev(struct ib_hash_table *ht, 
+		struct ib_hash_node *node);
+
+static inline void ib_hash_node_key(struct ib_hash_table *ht, 
+		struct ib_hash_node *node, void *key) {
+	node->key = key;
+	node->hash = ht->hash(key);
+}
+
+struct ib_hash_node* ib_hash_find(struct ib_hash_table *ht,
+		const struct ib_hash_node *node);
+
+struct ib_node** ib_hash_track(struct ib_hash_table *ht,
+		const struct ib_hash_node *node, struct ib_node **parent);
+
+struct ib_hash_node* ib_hash_add(struct ib_hash_table *ht,
+		struct ib_hash_node *node);
+
+void ib_hash_erase(struct ib_hash_table *ht, struct ib_hash_node *node);
+
+void ib_hash_replace(struct ib_hash_table *ht, 
+		struct ib_hash_node *victim, struct ib_hash_node *newnode);
+
+void ib_hash_clear(struct ib_hash_table *ht,
+		void (*destroy)(struct ib_hash_node *node));
+
+void* ib_hash_swap(struct ib_hash_table *ht, void *index, size_t nbytes);
+
 
 
 #ifdef __cplusplus
