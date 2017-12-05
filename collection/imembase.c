@@ -1803,165 +1803,6 @@ void* ib_hash_swap(struct ib_hash_table *ht, void *ptr, size_t nbytes)
 
 
 /*--------------------------------------------------------------------*/
-/* common type hash and equal functions                               */
-/*--------------------------------------------------------------------*/
-#define IB_HASH_FUNC_MASK		(~((size_t)3))
-#define IB_HASH_FUNC_UINT		0
-#define IB_HASH_FUNC_INT		1
-#define IB_HASH_FUNC_STR		2
-#define IB_HASH_FUNC_CSTR		3
-
-size_t ib_hash_seed = 0x11223344;
-
-static inline size_t _ib_hash_func_uint(const void *key)
-{
-#if 0
-	size_t x = (size_t)key;
-	return (x * 2654435761u) ^ ib_hash_seed;
-#else
-	return (size_t)key;
-#endif
-}
-
-static inline size_t _ib_hash_func_int(const void *key)
-{
-#if 0
-	size_t x = (size_t)key;
-	return (x * 2654435761u) ^ ib_hash_seed;
-#else
-	return (size_t)key;
-#endif
-}
-
-static inline size_t 
-_ib_hash_bytes_stl(const void *ptr, size_t size, size_t seed)
-{
-	const unsigned char *buf = (const unsigned char*)ptr;
-	const size_t m = 0x5bd1e995;
-	size_t hash = size ^ seed;
-	for (; size >= 4; buf += 4, size -= 4) {
-		size_t k = *((IUINT32*)buf);
-		k *= m;
-		k = (k >> 24) * m;
-		hash = (hash * m) ^ k;
-	}
-	switch (size) {
-	case 3: hash ^= ((IUINT32)buf[2]) << 16;
-	case 2: hash ^= ((IUINT32)buf[1]) << 8;
-	case 1: hash ^= ((IUINT32)buf[0]); hash = hash * m; break;
-	}
-	hash = (hash ^ (hash >> 13)) * m;
-	return hash ^ (hash >> 15);
-}
-
-static inline size_t
-_ib_hash_bytes_lua(const void *ptr, size_t size, size_t seed)
-{
-	const unsigned char *name = (const unsigned char*)ptr;
-	size_t step = (size >> 5) + 1;
-	size_t h = size ^ seed, i;
-    for(i = size; i >= step; i -= step)
-        h = h ^ ((h << 5) + (h >> 2) + (size_t)name[i - 1]);
-    return h;
-}
-
-static inline size_t _ib_hash_func_str(const void *key)
-{
-	ib_string *str = (ib_string*)key;
-#ifndef IB_HASH_BYTES_STL
-	return _ib_hash_bytes_lua(str->ptr, str->size, ib_hash_seed);
-#else
-	return _ib_hash_bytes_stl(str->ptr, str->size, ib_hash_seed);
-#endif
-}
-
-static inline size_t _ib_hash_func_cstr(const void *key)
-{
-	const char *str = (const char*)key;
-	size_t size = strlen(str);
-#ifndef IB_HASH_BYTES_STL
-	return _ib_hash_bytes_lua(str, size, ib_hash_seed);
-#else
-	return _ib_hash_bytes_stl(str, size, ib_hash_seed);
-#endif
-}
-
-static inline int _ib_hash_compare_uint(const void *key1, const void *key2)
-{
-	size_t x = (size_t)key1;
-	size_t y = (size_t)key2;
-	if (x == y) return 0;
-	return (x < y)? -1 : 1;
-}
-
-static inline int _ib_hash_compare_int(const void *key1, const void *key2)
-{
-	ilong x = (ilong)key1;
-	ilong y = (ilong)key2;
-	if (x == y) return 0;
-	return (x < y)? -1 : 1;
-}
-
-static inline int _ib_hash_compare_str(const void *key1, const void *key2)
-{
-	return ib_string_compare((const ib_string*)key1, (const ib_string*)key2);
-}
-
-static inline int 
-_ib_compare_bytes(const void *p1, size_t s1, const void *p2, size_t s2)
-{
-	int minsize = (s1 < s2)? s1 : s2;
-	int hr = memcmp(p1, p2, minsize);
-	if (hr == 0) {
-		if (s1 == s2) return 0;
-		return (s1 < s2)? -1 : 1;
-	}
-	else {
-		return (hr < 0)? -1 : 1;
-	}
-}
-
-static inline int _ib_hash_compare_cstr(const void *key1, const void *key2)
-{
-	const char *x = (const char*)key1;
-	const char *y = (const char*)key2;
-	return _ib_compare_bytes(x, strlen(x), y, strlen(y));
-}
-
-size_t ib_hash_func_uint(const void *key) {
-	return _ib_hash_func_uint(key);
-}
-
-int ib_hash_compare_uint(const void *key1, const void *key2) {
-	return _ib_hash_compare_uint(key1, key2);
-}
-
-size_t ib_hash_func_int(const void *key) {
-	return _ib_hash_func_int(key);
-}
-
-int ib_hash_compare_int(const void *key1, const void *key2) {
-	return _ib_hash_compare_int(key1, key2);
-}
-
-size_t ib_hash_func_str(const void *key) {
-	return _ib_hash_func_str(key);
-}
-
-int ib_hash_compare_str(const void *key1, const void *key2) {
-	return _ib_hash_compare_str(key1, key2);
-}
-
-size_t ib_hash_func_cstr(const void *key) {
-	return _ib_hash_func_cstr(key);
-}
-
-int ib_hash_compare_cstr(const void *key1, const void *key2) {
-	return _ib_hash_compare_cstr(key1, key2);
-}
-
-
-/*--------------------------------------------------------------------*/
 /* hash map, wrapper of ib_hash_table to support direct key/value     */
 /*--------------------------------------------------------------------*/
 
@@ -2009,15 +1850,6 @@ void ib_map_init(struct ib_hash_map *hm, size_t (*hash)(const void*),
 	hm->value_destroy = NULL;
 	hm->insert = 0;
 	hm->fixed = 0;
-	hm->builtin = -1;
-	if (hash == ib_hash_func_uint && compare == ib_hash_compare_uint)
-		hm->builtin = IB_HASH_FUNC_UINT;
-	else if (hash == ib_hash_func_int && compare == ib_hash_compare_int)
-		hm->builtin = IB_HASH_FUNC_INT;
-	else if (hash == ib_hash_func_str && compare == ib_hash_compare_str)
-		hm->builtin = IB_HASH_FUNC_STR;
-	else if (hash == ib_hash_func_cstr && compare == ib_hash_compare_cstr)
-		hm->builtin = IB_HASH_FUNC_CSTR;
 	ib_hash_init(&hm->ht, hash, compare);
 	ib_fastbin_init(&hm->fb, sizeof(struct ib_hash_entry));
 }
@@ -2039,38 +1871,8 @@ struct ib_hash_entry* ib_map_find(struct ib_hash_map *hm, const void *key)
 	struct ib_hash_node dummy;
 	struct ib_hash_node *rh;
 	void *ptr = (void*)key;
-#if 0
-	switch ((unsigned)hm->builtin) {
-	case IB_HASH_FUNC_UINT:
-		dummy.key = ptr;
-		dummy.hash = _ib_hash_func_uint(key);
-		ib_hash_search(ht, &dummy, rh, _ib_hash_compare_uint);
-		break;
-	case IB_HASH_FUNC_INT:
-		dummy.key = ptr;
-		dummy.hash = _ib_hash_func_int(key);
-		ib_hash_search(ht, &dummy, rh, _ib_hash_compare_int);
-		break;
-	case IB_HASH_FUNC_STR:
-		dummy.key = ptr;
-		dummy.hash = _ib_hash_func_str(key);
-		ib_hash_search(ht, &dummy, rh, _ib_hash_compare_str);
-		break;
-	case IB_HASH_FUNC_CSTR:
-		dummy.key = ptr;
-		dummy.hash = _ib_hash_func_cstr(key);
-		ib_hash_search(ht, &dummy, rh, _ib_hash_compare_cstr);
-		break;
-	default:
-		ib_hash_node_key(ht, &dummy, ptr);
-		rh = ib_hash_find(ht, &dummy);	
-		break;
-	}
-#else
-	/* switch/case costs more than function pointer */
 	ib_hash_node_key(ht, &dummy, ptr);
 	rh = ib_hash_find(ht, &dummy);
-#endif
 	return (rh == NULL)? NULL : IB_ENTRY(rh, struct ib_hash_entry, node);
 }
 
@@ -2232,6 +2034,124 @@ void ib_map_clear(struct ib_hash_map *hm)
 		ib_map_erase(hm, entry);
 	}
 	ASSERTION(hm->count == 0);
+}
+
+
+/*--------------------------------------------------------------------*/
+/* common type hash and equal functions                               */
+/*--------------------------------------------------------------------*/
+size_t ib_hash_seed = 0x11223344;
+
+size_t ib_hash_func_uint(const void *key)
+{
+#if 0
+	size_t x = (size_t)key;
+	return (x * 2654435761u) ^ ib_hash_seed;
+#else
+	return (size_t)key;
+#endif
+}
+
+size_t ib_hash_func_int(const void *key)
+{
+#if 0
+	size_t x = (size_t)key;
+	return (x * 2654435761u) ^ ib_hash_seed;
+#else
+	return (size_t)key;
+#endif
+}
+
+size_t ib_hash_bytes_stl(const void *ptr, size_t size, size_t seed)
+{
+	const unsigned char *buf = (const unsigned char*)ptr;
+	const size_t m = 0x5bd1e995;
+	size_t hash = size ^ seed;
+	for (; size >= 4; buf += 4, size -= 4) {
+		size_t k = *((IUINT32*)buf);
+		k *= m;
+		k = (k >> 24) * m;
+		hash = (hash * m) ^ k;
+	}
+	switch (size) {
+	case 3: hash ^= ((IUINT32)buf[2]) << 16;
+	case 2: hash ^= ((IUINT32)buf[1]) << 8;
+	case 1: hash ^= ((IUINT32)buf[0]); hash = hash * m; break;
+	}
+	hash = (hash ^ (hash >> 13)) * m;
+	return hash ^ (hash >> 15);
+}
+
+size_t ib_hash_bytes_lua(const void *ptr, size_t size, size_t seed)
+{
+	const unsigned char *name = (const unsigned char*)ptr;
+	size_t step = (size >> 5) + 1;
+	size_t h = size ^ seed, i;
+    for(i = size; i >= step; i -= step)
+        h = h ^ ((h << 5) + (h >> 2) + (size_t)name[i - 1]);
+    return h;
+}
+
+size_t ib_hash_func_str(const void *key)
+{
+	ib_string *str = (ib_string*)key;
+#ifndef IB_HASH_BYTES_STL
+	return ib_hash_bytes_lua(str->ptr, str->size, ib_hash_seed);
+#else
+	return ib_hash_bytes_stl(str->ptr, str->size, ib_hash_seed);
+#endif
+}
+
+size_t ib_hash_func_cstr(const void *key)
+{
+	const char *str = (const char*)key;
+	size_t size = strlen(str);
+#ifndef IB_HASH_BYTES_STL
+	return ib_hash_bytes_lua(str, size, ib_hash_seed);
+#else
+	return ib_hash_bytes_stl(str, size, ib_hash_seed);
+#endif
+}
+
+int ib_hash_compare_uint(const void *key1, const void *key2)
+{
+	size_t x = (size_t)key1;
+	size_t y = (size_t)key2;
+	if (x == y) return 0;
+	return (x < y)? -1 : 1;
+}
+
+int ib_hash_compare_int(const void *key1, const void *key2)
+{
+	ilong x = (ilong)key1;
+	ilong y = (ilong)key2;
+	if (x == y) return 0;
+	return (x < y)? -1 : 1;
+}
+
+int ib_hash_compare_str(const void *key1, const void *key2)
+{
+	return ib_string_compare((const ib_string*)key1, (const ib_string*)key2);
+}
+
+int ib_compare_bytes(const void *p1, size_t s1, const void *p2, size_t s2)
+{
+	int minsize = (s1 < s2)? s1 : s2;
+	int hr = memcmp(p1, p2, minsize);
+	if (hr == 0) {
+		if (s1 == s2) return 0;
+		return (s1 < s2)? -1 : 1;
+	}
+	else {
+		return (hr < 0)? -1 : 1;
+	}
+}
+
+int ib_hash_compare_cstr(const void *key1, const void *key2)
+{
+	const char *x = (const char*)key1;
+	const char *y = (const char*)key2;
+	return ib_compare_bytes(x, strlen(x), y, strlen(y));
 }
 
 
