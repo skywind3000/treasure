@@ -799,6 +799,7 @@ struct ib_hash_map
 	size_t count;
 	int insert;
 	int fixed;
+	int builtin;
 	void* (*key_copy)(void *key);
 	void (*key_destroy)(void *key);
 	void* (*value_copy)(void *value);
@@ -824,7 +825,6 @@ struct ib_hash_entry* ib_map_next(struct ib_hash_map *hm,
 struct ib_hash_entry* ib_map_prev(struct ib_hash_map *hm, 
 		struct ib_hash_entry *n);
 
-
 struct ib_hash_entry* ib_map_find(struct ib_hash_map *hm, const void *key);
 void* ib_map_lookup(struct ib_hash_map *hm, const void *key, void *defval);
 
@@ -849,6 +849,18 @@ void ib_map_clear(struct ib_hash_map *hm);
 /*--------------------------------------------------------------------*/
 /* common type hash and equal functions                               */
 /*--------------------------------------------------------------------*/
+
+size_t ib_hash_func_uint(const void *key);
+int ib_hash_compare_uint(const void *key1, const void *key2);
+
+size_t ib_hash_func_int(const void *key);
+int ib_hash_compare_int(const void *key1, const void *key2);
+
+size_t ib_hash_func_str(const void *key);
+int ib_hash_compare_str(const void *key1, const void *key2);
+
+size_t ib_hash_func_cstr(const void *key);
+int ib_hash_compare_cstr(const void *key1, const void *key2);
 
 
 
