@@ -777,8 +777,7 @@ void* ib_hash_swap(struct ib_hash_table *ht, void *index, size_t nbytes);
 				int __hc = (compare)(__key, __snode->key); \
 				if (__hc == 0) { (result) = __snode; break; } \
 				__anode = (__hc < 0)? __anode->left : __anode->right; \
-			} \
-			else { \
+			}	else { \
 				__anode = (__hash < __shash)? __anode->left:__anode->right;\
 			} \
 		} \
@@ -849,6 +848,31 @@ void ib_map_clear(struct ib_hash_map *hm);
 /*--------------------------------------------------------------------*/
 /* common type hash and equal functions                               */
 /*--------------------------------------------------------------------*/
+
+#define ib_map_search(hm, srckey, hash_func, cmp_func, result) do { \
+		size_t __hash = (hash_func)(srckey); \
+		struct ib_hash_index *__index = \
+			&((hm)->ht.index[__hash & ((hm)->ht.index_mask)]); \
+		struct ib_node *__anode = __index->avlroot.node; \
+		(result) = NULL; \
+		while (__anode) { \
+			struct ib_hash_node *__snode = \
+				IB_ENTRY(__anode, struct ib_hash_node, avlnode); \
+			size_t __shash = __snode->hash; \
+			if (__hash == __shash) { \
+				int __hc = (cmp_func)((srckey), __snode->key); \
+				if (__hc == 0) { \
+					(result) = IB_ENTRY(__snode, \
+							struct ib_hash_entry, node);\
+					break; \
+				} \
+				__anode = (__hc < 0)? __anode->left : __anode->right; \
+			}	else { \
+				__anode = (__hash < __shash)? __anode->left:__anode->right;\
+			} \
+		} \
+	}	while (0)
+
 
 size_t ib_hash_func_uint(const void *key);
 int ib_hash_compare_uint(const void *key1, const void *key2);
