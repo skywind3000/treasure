@@ -695,7 +695,7 @@ struct ib_hash_node
 {
 	struct ib_node avlnode;
 	void *key;
-	iulong hash;
+	size_t hash;
 };
 
 struct ib_hash_index
@@ -711,7 +711,7 @@ struct ib_hash_table
 	size_t count;
 	size_t index_size;
 	size_t index_mask;
-	iulong (*hash)(const void *key);
+	size_t (*hash)(const void *key);
 	int (*compare)(const void *key1, const void *key2);
 	struct ILISTHEAD head;
 	struct ib_hash_index *index;
@@ -720,7 +720,7 @@ struct ib_hash_table
 
 
 void ib_hash_init(struct ib_hash_table *ht, 
-		iulong (*hash)(const void *key),
+		size_t (*hash)(const void *key),
 		int (*compare)(const void *key1, const void *key2));
 
 struct ib_hash_node* ib_hash_node_first(struct ib_hash_table *ht);
@@ -763,7 +763,7 @@ void* ib_hash_swap(struct ib_hash_table *ht, void *index, size_t nbytes);
 /* fast inline search, compare function will be expanded inline here  */
 /*--------------------------------------------------------------------*/
 #define ib_hash_search(ht, srcnode, result, compare) do { \
-		iulong __hash = (srcnode)->hash; \
+		size_t __hash = (srcnode)->hash; \
 		const void *__key = (srcnode)->key; \
 		struct ib_hash_index *__index = \
 			&((ht)->index[__hash & ((ht)->index_mask)]); \
@@ -772,7 +772,7 @@ void* ib_hash_swap(struct ib_hash_table *ht, void *index, size_t nbytes);
 		while (__anode) { \
 			struct ib_hash_node *__snode = \
 				IB_ENTRY(__anode, struct ib_hash_node, avlnode); \
-			iulong __shash = __snode->hash; \
+			size_t __shash = __snode->hash; \
 			if (__hash == __shash) { \
 				int __hc = (compare)(__key, __snode->key); \
 				if (__hc == 0) { (result) = __snode; break; } \
@@ -783,6 +783,72 @@ void* ib_hash_swap(struct ib_hash_table *ht, void *index, size_t nbytes);
 			} \
 		} \
 	} while (0)
+
+
+/*--------------------------------------------------------------------*/
+/* hash map, wrapper of ib_hash_table to support direct key/value     */
+/*--------------------------------------------------------------------*/
+struct ib_hash_entry
+{
+	struct ib_hash_node node;
+	void *value;
+};
+
+struct ib_hash_map
+{
+	size_t count;
+	int insert;
+	int fixed;
+	void* (*key_copy)(void *key);
+	void (*key_destroy)(void *key);
+	void* (*value_copy)(void *value);
+	void (*value_destroy)(void *value);
+	struct ib_fastbin fb;
+	struct ib_hash_table ht;
+};
+
+
+#define ib_hash_key(entry)     ((entry)->node.key)
+#define ib_hash_value(entry)   ((entry)->value)
+
+void ib_map_init(struct ib_hash_map *hm, size_t (*hash)(const void*),
+		int (*compare)(const void *, const void *));
+
+void ib_map_destroy(struct ib_hash_map *hm);
+
+struct ib_hash_entry* ib_map_first(struct ib_hash_map *hm);
+struct ib_hash_entry* ib_map_last(struct ib_hash_map *hm);
+
+struct ib_hash_entry* ib_map_next(struct ib_hash_map *hm, 
+		struct ib_hash_entry *n);
+struct ib_hash_entry* ib_map_prev(struct ib_hash_map *hm, 
+		struct ib_hash_entry *n);
+
+
+struct ib_hash_entry* ib_map_find(struct ib_hash_map *hm, const void *key);
+void* ib_map_lookup(struct ib_hash_map *hm, const void *key, void *defval);
+
+
+struct ib_hash_entry* ib_map_add(struct ib_hash_map *hm, 
+		void *key, void *value, int *success);
+
+struct ib_hash_entry* ib_map_set(struct ib_hash_map *hm,
+		void *key, void *value);
+
+void* ib_map_get(struct ib_hash_map *hm, const void *key);
+
+void ib_map_erase(struct ib_hash_map *hm, struct ib_hash_entry *entry);
+
+
+/* returns 0 for success, -1 for key mismatch */
+int ib_map_remove(struct ib_hash_map *hm, const void *key);
+
+void ib_map_clear(struct ib_hash_map *hm);
+
+
+/*--------------------------------------------------------------------*/
+/* common type hash and equal functions                               */
+/*--------------------------------------------------------------------*/
 
 
 
