@@ -846,7 +846,7 @@ void ib_map_clear(struct ib_hash_map *hm);
 
 
 /*--------------------------------------------------------------------*/
-/* common type hash and equal functions                               */
+/* fast inline search template                                        */
 /*--------------------------------------------------------------------*/
 
 #define ib_map_search(hm, srckey, hash_func, cmp_func, result) do { \
@@ -874,6 +874,9 @@ void ib_map_clear(struct ib_hash_map *hm);
 	}	while (0)
 
 
+/*--------------------------------------------------------------------*/
+/* common type hash                                                   */
+/*--------------------------------------------------------------------*/
 size_t ib_hash_func_uint(const void *key);
 int ib_hash_compare_uint(const void *key1, const void *key2);
 
@@ -885,6 +888,12 @@ int ib_hash_compare_str(const void *key1, const void *key2);
 
 size_t ib_hash_func_cstr(const void *key);
 int ib_hash_compare_cstr(const void *key1, const void *key2);
+
+
+struct ib_hash_entry *ib_map_find_uint(struct ib_hash_map *hm, iulong key);
+struct ib_hash_entry *ib_map_find_int(struct ib_hash_map *hm, ilong key);
+struct ib_hash_entry *ib_map_find_str(struct ib_hash_map *hm, const ib_string *key);
+struct ib_hash_entry *ib_map_find_cstr(struct ib_hash_map *hm, const char *key);
 
 
 
