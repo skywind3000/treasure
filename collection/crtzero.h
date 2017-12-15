@@ -214,12 +214,11 @@ typedef ISTDUINT32 IUINT32;
     #ifndef CRTZERO_CPU_MSB
         #define CRTZERO_CPU_MSB		0
     #endif
-#endif
-
-#if CRTZERO_CPU_MSB
-	#define CRTZERO_CPU_LSB		0
-#else
-	#define CRTZERO_CPU_LSB		1
+	#if CRTZERO_CPU_MSB
+		#define CRTZERO_CPU_LSB		0
+	#else
+		#define CRTZERO_CPU_LSB		1
+	#endif
 #endif
 
 
