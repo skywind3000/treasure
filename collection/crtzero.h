@@ -109,24 +109,6 @@ typedef ISTDINT32 IINT32;
 typedef ISTDUINT32 IUINT32;
 #endif
 
-#ifndef __IINT64_DEFINED
-#define __IINT64_DEFINED
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-typedef __int64 IINT64;
-#else
-typedef long long IINT64;
-#endif
-#endif
-
-#ifndef __IUINT64_DEFINED
-#define __IUINT64_DEFINED
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-typedef unsigned __int64 IUINT64;
-#else
-typedef unsigned long long IUINT64;
-#endif
-#endif
-
 
 //---------------------------------------------------------------------
 // INLINE
@@ -265,9 +247,9 @@ extern int (*cz_memcmp)(const void *lhs, const void *rhs, size_t size);
 
 
 //=====================================================================
-// CHAR STD
+// CHAR TYPES
 //=====================================================================
-extern IUINT32 cz_char_type[];
+extern IUINT32 cz_ctype[];
 
 #define CZ_UPPER	0x0001
 #define CZ_LOWER	0x0002
@@ -278,6 +260,22 @@ extern IUINT32 cz_char_type[];
 #define CZ_BLANK	0x0040
 #define CZ_HEX		0x0080
 
+#define cz_isalpha(c)  (cz_ctype[(c)] & (CZ_UPPER | CZ_LOWER))
+#define cz_isupper(c)  (cz_ctype[(c)] & CZ_UPPER)
+#define cz_islower(c)  (cz_ctype[(c)] & CZ_LOWER)
+#define cz_isdigit(c)  (cz_ctype[(c)] & CZ_DIGIT)
+#define cz_isalnum(c)  (cz_ctype[(c)] & (CZ_DIGIT | CZ_UPPER | CZ_LOWER))
+#define cz_ispunct(c)  (cz_ctype[(c)] & CZ_PUNCT)
+#define cz_isspace(c)  (cz_ctype[(c)] & CZ_SPACE)
+#define cz_isblank(c)  (cz_ctype[(c)] & CZ_BLANK)
+#define cz_iscntrl(c)  (cz_ctype[(c)] & CZ_CONTROL)
+#define cz_isascii(c)  (((unsigned)(c)) < 128)
+#define cz_isgraph(c)  ((c) >= 0x21 && (c) <= 0x7e)
+#define cz_isprint(c)  ((c) >= 0x20 && (c) <= 0x7e)
+#define cz_isxdigit(c) (cz_ctype[(c)] & (CZ_HEX | CZ_DIGIT))
+
+#define cz_toupper(c)  ((int)((cz_ctype[(c)] >> 8) & 0xff))
+#define cz_tolower(c)  ((int)((cz_ctype[(c)] >> 16) & 0xff))
 
 #ifdef __cplusplus
 }
