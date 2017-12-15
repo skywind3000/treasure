@@ -230,22 +230,7 @@ typedef ISTDUINT32 IUINT32;
 extern "C" {
 #endif
 
-//=====================================================================
-// MEMORY STD
-//=====================================================================
-
-void* _cz_memcpy(void *dst, const void *src, size_t size);
-void* _cz_memmove(void *dst, const void *src, size_t size);
-void* _cz_memset(void *dst, int ch, size_t size);
-int _cz_memcmp(const void *lhs, const void *rhs, size_t size);
-
-extern void* (*cz_memcpy)(void *dst, const void *src, size_t size);
-extern void* (*cz_memmove)(void *dst, const void *src, size_t size);
-extern void* (*cz_memset)(void *dst, int ch, size_t size);
-extern int (*cz_memcmp)(const void *lhs, const void *rhs, size_t size);
-
-
-
+	
 //=====================================================================
 // CHAR TYPES
 //=====================================================================
@@ -276,6 +261,25 @@ extern IUINT32 cz_ctype[];
 
 #define cz_toupper(c)  ((int)((cz_ctype[(c)] >> 8) & 0xff))
 #define cz_tolower(c)  ((int)((cz_ctype[(c)] >> 16) & 0xff))
+
+
+
+//=====================================================================
+// MEMORY STD
+//=====================================================================
+
+void* _cz_memcpy(void *dst, const void *src, size_t size);
+void* _cz_memmove(void *dst, const void *src, size_t size);
+void* _cz_memset(void *dst, int ch, size_t size);
+int _cz_memcmp(const void *lhs, const void *rhs, size_t size);
+
+extern void* (*cz_memcpy)(void *dst, const void *src, size_t size);
+extern void* (*cz_memmove)(void *dst, const void *src, size_t size);
+extern void* (*cz_memset)(void *dst, int ch, size_t size);
+extern int (*cz_memcmp)(const void *lhs, const void *rhs, size_t size);
+
+
+
 
 #ifdef __cplusplus
 }
