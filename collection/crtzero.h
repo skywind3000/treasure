@@ -234,7 +234,7 @@ extern "C" {
 //=====================================================================
 // CHAR TYPES
 //=====================================================================
-extern IUINT32 cz_ctype[];
+extern const IUINT32 cz_ctype[];
 
 #define CZ_UPPER	0x0001
 #define CZ_LOWER	0x0002
