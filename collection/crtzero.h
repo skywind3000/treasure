@@ -15,14 +15,20 @@
 #ifndef _CRTZERO_H_
 #define _CRTZERO_H_
 
-// stddef.h and limits.h is required
-#include <stddef.h>
-#include <limits.h>
-
 // optional config
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+// stddef.h and limits.h is required
+#ifndef HAVE_NOT_STDDEF_H
+#include <stddef.h>
+#endif
+
+#ifndef HAVE_NOT_LIMITS_H
+#include <limits.h>
+#endif
+
 
 
 //=====================================================================
@@ -64,7 +70,6 @@
 	typedef uint32_t ISTDUINT32;
 	typedef int32_t ISTDINT32;
 #else 
-#include <limits.h>
 #if UINT_MAX == 0xFFFFU
 	typedef unsigned long ISTDUINT32; 
 	typedef long ISTDINT32;
@@ -279,14 +284,43 @@ extern const IUINT32 cz_ctype[];
 void* _cz_memcpy(void *dst, const void *src, size_t size);
 void* _cz_memmove(void *dst, const void *src, size_t size);
 void* _cz_memset(void *dst, int ch, size_t size);
+void* _cz_memchr(const void *ptr, int ch, size_t size);
 int _cz_memcmp(const void *lhs, const void *rhs, size_t size);
+int _cz_memicmp(const void *lhs, const void *rhs, size_t size);
+int _cz_memscmp(const char *s1, size_t len1, const char *s2, size_t len2);
+int _cz_memucmp(const char *s1, size_t len1, const char *s2, size_t len2);
 
 extern void* (*cz_memcpy)(void *dst, const void *src, size_t size);
 extern void* (*cz_memmove)(void *dst, const void *src, size_t size);
 extern void* (*cz_memset)(void *dst, int ch, size_t size);
+extern void* (*cz_memchr)(const void *src, int ch, size_t size);
 extern int (*cz_memcmp)(const void *lhs, const void *rhs, size_t size);
+extern int (*cz_strmcmp)(const char *, size_t, const char *, size_t);
+extern int (*cz_strucmp)(const char *, size_t, const char *, size_t);
 
 
+//=====================================================================
+// STRING STD
+//=====================================================================
+
+size_t _cz_strlen(const char *str);
+char* _cz_strncpy(char *dst, const char *src, size_t count);
+char* _cz_strncat(char *dst, const char *src, size_t count);
+char* _cz_strcpy(char *dst, const char *src);
+char* _cz_strcat(char *dst, const char *src);
+
+char* _cz_strchr(const char *str, int ch);
+char* _cz_strrchr(const char *str, int ch);
+char* _cz_strstr(const char *s1, const char *s2);
+char* _cz_stristr(const char *s1, const char *s2);
+char* _cz_strsep(char **stringp, const char *delim);
+
+int _cz_strcmp(const char *lhs, const char *rhs);
+int _cz_strncmp(const char *lhs, const char *rhs, size_t count);
+
+size_t _cz_strspn(const char *string, const char *control);
+size_t _cz_strcspn(const char *string, const char *control);
+char* _cz_strpbrk(const char *string, const char *control);
 
 
 #ifdef __cplusplus

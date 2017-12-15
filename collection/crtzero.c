@@ -119,11 +119,21 @@ void* _cz_memset(void *dst, int ch, size_t size)
 }
 
 
+void* _cz_memchr(const void *ptr, int ch, size_t size)
+{
+	while ( size && (*(unsigned char *)ptr != (unsigned char)ch) ) {
+		ptr = (unsigned char *)ptr + 1;
+		size--;
+	}
+	return (size ? (void *)ptr : NULL);
+}
+
+
 int _cz_memcmp(const void *lhs, const void *rhs, size_t size)
 {
 	const unsigned char *ll = (const unsigned char*)lhs;
 	const unsigned char *rr = (const unsigned char*)rhs;
-	if (ll == rr) return 0;
+	if (ll == rr || size == 0) return 0;
 	for (; size >= 4; ll += 4, rr += 4, size -= 4) {
 		if (*((const IUINT32*)ll) != *((const IUINT32*)rr)) break;
 	}
@@ -136,6 +146,36 @@ int _cz_memcmp(const void *lhs, const void *rhs, size_t size)
 	return 0;
 }
 
+int _cz_memicmp(const void *lhs, const void *rhs, size_t size)
+{
+	const unsigned char *ll = (const unsigned char*)lhs;
+	const unsigned char *rr = (const unsigned char*)rhs;
+	if (ll == rr || size == 0) return 0;
+	for (; size > 0; ll++, rr++, size--) {
+		if (cz_tolower(ll[0]) != cz_tolower(rr[0])) break;
+	}
+	if (size > 0) {
+		return (cz_tolower(ll[0]) <= cz_tolower(rr[0]))? -1 : 1;
+	}
+	return 0;
+}
+
+int _cz_memscmp(const char *s1, size_t len1, const char *s2, size_t len2)
+{
+	size_t minsize = cz_min(len1, len2);
+	int hr = _cz_memcmp(s1, s2, minsize);
+	if (hr != 0) return hr;
+	return (len1 < len2)? -1 : 1;
+}
+
+int _cz_memucmp(const char *s1, size_t len1, const char *s2, size_t len2)
+{
+	size_t minsize = cz_min(len1, len2);
+	int hr = _cz_memicmp(s1, s2, minsize);
+	if (hr != 0) return hr;
+	return (len1 < len2)? -1 : 1;
+}
+
 
 
 //---------------------------------------------------------------------
@@ -144,8 +184,214 @@ int _cz_memcmp(const void *lhs, const void *rhs, size_t size)
 void* (*cz_memcpy)(void *dst, const void *src, size_t size) = _cz_memcpy;
 void* (*cz_memmove)(void *dst, const void *src, size_t size) = _cz_memmove;
 void* (*cz_memset)(void *dst, int ch, size_t size) = _cz_memset;
+void* (*cz_memchr)(const void *src, int ch, size_t size) = _cz_memchr;
 int (*cz_memcmp)(const void *lhs, const void *rhs, size_t size) = _cz_memcmp;
+int (*cz_memscmp)(const char *, size_t, const char *, size_t) = _cz_memscmp;
+int (*cz_memucmp)(const char *, size_t, const char *, size_t) = _cz_memucmp;
 
 
+
+//=====================================================================
+// STRING STD
+//=====================================================================
+
+size_t _cz_strlen(const char *str)
+{
+	const char *eos = str;
+	while (*eos++) ;
+	return (int)(eos - str - 1);
+}
+
+char* _cz_strncpy(char *dst, const char *src, size_t count)
+{
+	char *start = dst;
+	while (count && (*dst++ = *src++)) count--;
+	if (count) {
+		while (--count) *dst++ = '\0';
+	}
+	return start;
+}
+
+char* _cz_strcpy(char *dst, const char *src)
+{
+	char *start = dst;
+	for (; src[0]; src++, dst++) dst[0] = src[0];
+	dst[0] = '\0';
+	return start;
+}
+
+char* _cz_strncat(char *dst, const char *src, size_t count)
+{
+	char *start = dst;
+	while (dst[0]) dst++;
+	while (count--) {
+		if (!(*dst++ = *src++))
+			return start;
+	}
+	*dst = '\0';
+	return start;
+}
+
+char* _cz_strcat(char *dst, const char *src)
+{
+	char *start = dst;
+	while (dst[0]) dst++;
+	for (; src[0]; src++, dst++) dst[0] = src[0];
+	*dst = '\0';
+	return start;
+}
+
+char* _cz_strchr(const char *str, int ch)
+{
+	while (*str && *str != (char)ch) str++;
+	if (*str == (char)ch) return (char*)str;
+	return NULL;
+}
+
+char* _cz_strrchr(const char *str, int ch)
+{
+	char *start = (char *)str;
+	while (*str++);
+	while (--str != start && *str != (char)ch);
+	if (*str == (char)ch)
+		return (char*)str;
+	return NULL;
+}
+
+char* _cz_strstr(const char *s1, const char *s2)
+{  
+	const char* ptr = s1;
+	if (!s1 || !s2 || !*s2) return (char*)s1;
+	while (*ptr) {
+		if (*ptr == *s2) {
+			const char* cur1 = ptr + 1;
+			const char* cur2 = s2 + 1;
+			while (*cur1 && *cur2 && *cur1 == *cur2) {
+				cur1++;
+				cur2++;
+			}
+			if (!*cur2) return (char*)ptr;
+		}
+		ptr++;
+	}
+	return NULL;
+}
+
+char* _cz_stristr(const char *s1, const char *s2)
+{
+	const char* ptr = s1;
+	if (!s1 || !s2 || !*s2) return (char*)s1;
+	while (*ptr) {
+		if (cz_tolower((unsigned char)ptr[0]) == 
+			cz_tolower((unsigned char)s2[0])) {
+			const char* cur1 = ptr + 1;
+			const char* cur2 = s2 + 1;
+			while (*cur1 && *cur2 && 
+					cz_tolower((unsigned char)cur1[0]) == 
+					cz_tolower((unsigned char)cur2[0])) {
+				cur1++;
+				cur2++;
+			}
+			if (!*cur2) return (char*)ptr;
+		}
+		ptr++;
+	}
+	return NULL;
+}
+
+char* _cz_strsep(char **stringp, const char *delim)
+{
+	char *s, *tok;
+	const char *spanp;
+	int c, sc;
+	if ((s = *stringp) == NULL) return NULL;
+	for (tok = s;;) {
+		c = *s++;
+		spanp = delim;
+		do {
+			if ((sc = *spanp++) == c) {
+				if (c == 0) s = NULL;
+				else s[-1] = 0;
+				*stringp = s;
+				return tok;
+			}
+		}	while (sc != 0);
+	}
+}
+
+int _cz_strcmp(const char *lhs, const char *rhs)
+{
+	size_t ls = _cz_strlen(lhs);
+	size_t rs = _cz_strlen(rhs);
+	return _cz_memscmp(lhs, ls, rhs, rs);
+}
+
+int _cz_strncmp(const char *lhs, const char *rhs, size_t count)
+{
+	size_t ls = _cz_strlen(lhs);
+	size_t rs = _cz_strlen(rhs);
+	ls = cz_max(ls, count);
+	rs = cz_max(rs, count);
+	return _cz_memscmp(lhs, ls, rhs, rs);
+}
+
+size_t _cz_strspn(const char *string, const char *control)
+{
+	const unsigned char *str = (const unsigned char*)string;
+	const unsigned char *ctrl = (const unsigned char*)control;
+	unsigned char map[32];
+	int count;
+	_cz_memset(map, 0, 32);
+	while (*ctrl) {
+		map[*ctrl >> 3] |= (1 << (*ctrl & 7));
+		ctrl++;
+	}
+	if (*str) {
+		count = 0;
+		while (map[*str >> 3] & (1 << (*str & 7))) {
+			count++;
+			str++;
+		}
+		return count;
+	}
+	return 0;
+}
+
+size_t _cz_strcspn(const char *string, const char *control)
+{
+	const unsigned char *str = (const unsigned char*)string;
+	const unsigned char *ctrl = (const unsigned char*)control;
+	unsigned char map[32];
+	int count;
+	_cz_memset(map, 0, 32);
+	while (*ctrl) {
+		map[*ctrl >> 3] |= (1 << (*ctrl & 7));
+		ctrl++;
+	}
+	count = 0;
+	map[0] |= 1;
+	while (!(map[*str >> 3] & (1 << (*str & 7)))) {
+		count++;
+		str++;
+	}
+	return count;
+}
+
+char* _cz_strpbrk(const char *string, const char *control)
+{
+	const unsigned char *str = (const unsigned char*)string;
+	const unsigned char *ctrl = (const unsigned char*)control;
+	unsigned char map[32];
+	_cz_memset(map, 0, 32);
+	while (*ctrl) {
+		map[*ctrl >> 3] |= (1 << (*ctrl & 7));
+		ctrl++;
+	}
+	for (; *str; str++) {
+		if (map[*str >> 3] & (1 << (*str & 7)))
+			return (char*)str;
+	}
+	return NULL;
+}
 
 
