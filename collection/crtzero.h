@@ -225,6 +225,15 @@ typedef ISTDUINT32 IUINT32;
 //---------------------------------------------------------------------
 // Compatible
 //---------------------------------------------------------------------
+
+// be ware of the macro risk
+#define cz_max(x, y)     (((x) > (y))? (x) : (y))
+#define cz_min(x, y)     (((x) < (y))? (x) : (y))
+#define cz_abs(x)        (((x) >= 0)? (x) : (-(x)))
+#define cz_mid(x, min, max)  \
+	( ((x) < (min))? (min) : (((x) > (max))? (max) : (x)) )
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
