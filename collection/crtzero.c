@@ -326,6 +326,13 @@ int _cz_strcmp(const char *lhs, const char *rhs)
 	return _cz_memscmp(lhs, ls, rhs, rs);
 }
 
+int _cz_stricmp(const char *lhs, const char *rhs)
+{
+	size_t ls = _cz_strlen(lhs);
+	size_t rs = _cz_strlen(rhs);
+	return _cz_memucmp(lhs, ls, rhs, rs);
+}
+
 int _cz_strncmp(const char *lhs, const char *rhs, size_t count)
 {
 	size_t ls = _cz_strlen(lhs);
@@ -333,6 +340,15 @@ int _cz_strncmp(const char *lhs, const char *rhs, size_t count)
 	ls = cz_max(ls, count);
 	rs = cz_max(rs, count);
 	return _cz_memscmp(lhs, ls, rhs, rs);
+}
+
+int _cz_strnicmp(const char *lhs, const char *rhs, size_t count)
+{
+	size_t ls = _cz_strlen(lhs);
+	size_t rs = _cz_strlen(rhs);
+	ls = cz_max(ls, count);
+	rs = cz_max(rs, count);
+	return _cz_memucmp(lhs, ls, rhs, rs);
 }
 
 size_t _cz_strspn(const char *string, const char *control)
@@ -392,6 +408,21 @@ char* _cz_strpbrk(const char *string, const char *control)
 			return (char*)str;
 	}
 	return NULL;
+}
+
+
+char* _cz_strrev(char *string)
+{
+	char *start = string;
+	char *left = string;
+	char ch;
+	if (string[0]) {
+		for (; string[1]; string++);
+		for (; left < string; ) {
+			ch = *left; *left++ = *string; *string-- = ch;
+		}
+	}
+	return start;	
 }
 
 

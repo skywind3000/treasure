@@ -295,8 +295,8 @@ extern void* (*cz_memmove)(void *dst, const void *src, size_t size);
 extern void* (*cz_memset)(void *dst, int ch, size_t size);
 extern void* (*cz_memchr)(const void *src, int ch, size_t size);
 extern int (*cz_memcmp)(const void *lhs, const void *rhs, size_t size);
-extern int (*cz_strmcmp)(const char *, size_t, const char *, size_t);
-extern int (*cz_strucmp)(const char *, size_t, const char *, size_t);
+extern int (*cz_memscmp)(const char *, size_t, const char *, size_t);
+extern int (*cz_memucmp)(const char *, size_t, const char *, size_t);
 
 
 //=====================================================================
@@ -316,11 +316,14 @@ char* _cz_stristr(const char *s1, const char *s2);
 char* _cz_strsep(char **stringp, const char *delim);
 
 int _cz_strcmp(const char *lhs, const char *rhs);
+int _cz_stricmp(const char *lhs, const char *rhs);
 int _cz_strncmp(const char *lhs, const char *rhs, size_t count);
+int _cz_strnicmp(const char *lhs, const char *rhs, size_t count);
 
 size_t _cz_strspn(const char *string, const char *control);
 size_t _cz_strcspn(const char *string, const char *control);
 char* _cz_strpbrk(const char *string, const char *control);
+char* _cz_strrev(char *string);
 
 
 #ifdef __cplusplus
