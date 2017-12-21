@@ -127,7 +127,7 @@ typedef ISTDUINT32 IUINT32;
 #define INLINE         __inline__
 #endif
 
-#elif (defined(_MSC_VER) || defined(__BORLANDC__) || defined(__WATCOMC__))
+#elif (defined(_MSC_VER) || defined(__WATCOMC__))
 #define INLINE __inline
 #else
 #define INLINE 
@@ -238,6 +238,51 @@ typedef ISTDUINT32 IUINT32;
 #define cz_mid(x, min, max)  \
 	( ((x) < (min))? (min) : (((x) > (max))? (max) : (x)) )
 
+#define cz_cast(type, ptr) ((type)(ptr))
+#define cz_offset(type, member) ((size_t) (&((type*)0)->member))
+
+
+// if we have "typeof", macro risk can be prevented.
+#if defined(__GCC__) 
+#if (__GNUC__ > 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ >= 3))
+#undef cz_abs
+#undef cz_mid
+#undef cz_max
+#undef cz_min
+
+#define cz_min(x, y) ({ typeof(x) __a = (x); typeof(y) __b = (y); \
+		__a <= __b ? __a : __b; })
+
+#define cz_max(x, y) ({ typeof(x) __a = (x); typeof(y) __b = (y); \
+		__a >= __b ? __a : __b; })
+
+#define cz_abs(x) ({ typeof(x) __a = (x); (__a >= 0)? __a : (-__a); })
+
+#define cz_mid(x, min, max) ({ typeof(x) __x = (x); \
+		typeof(min) __min = (min); typeof(max) __max = (max); \
+		( (__x < __min)? __min : ((__x > __max)? __max : __x) ); })
+
+#endif
+#endif
+
+#ifndef CZ_ASSERT
+#define CZ_ASSERT(x) ((void)0)
+#endif
+
+#ifndef CZ_STATIC_ASSERT
+#define CZ_STATIC_ASSERT(name, x) \
+	typedef int _cz_static_assert_ ## name[(x) ? 1 : -1 ]
+#endif
+
+
+CZ_STATIC_ASSERT(SIZE_INT32_IS_4, sizeof(IINT32) == 4);
+CZ_STATIC_ASSERT(SIZE_UINT32_IS_4, sizeof(IUINT32) == 4);
+
+
+#define CZ_INT32_MAX    0x7fffffffl
+#define CZ_INT32_MIN    ((-CZ_INT32_MAX) - 1)
+
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -281,49 +326,98 @@ extern const IUINT32 cz_ctype[];
 // MEMORY STD
 //=====================================================================
 
-void* _cz_memcpy(void *dst, const void *src, size_t size);
-void* _cz_memmove(void *dst, const void *src, size_t size);
-void* _cz_memset(void *dst, int ch, size_t size);
-void* _cz_memchr(const void *ptr, int ch, size_t size);
-int _cz_memcmp(const void *lhs, const void *rhs, size_t size);
-int _cz_memicmp(const void *lhs, const void *rhs, size_t size);
-int _cz_memscmp(const char *s1, size_t len1, const char *s2, size_t len2);
-int _cz_memucmp(const char *s1, size_t len1, const char *s2, size_t len2);
+void* cz_memcpy(void *dst, const void *src, size_t size);
+void* cz_memmove(void *dst, const void *src, size_t size);
+void* cz_memset(void *dst, int ch, size_t size);
+void* cz_memchr(const void *ptr, int ch, size_t size);
+int cz_memcmp(const void *lhs, const void *rhs, size_t size);
+int cz_memicmp(const void *lhs, const void *rhs, size_t size);
+int cz_memscmp(const char *s1, size_t len1, const char *s2, size_t len2);
+int cz_memucmp(const char *s1, size_t len1, const char *s2, size_t len2);
 
-extern void* (*cz_memcpy)(void *dst, const void *src, size_t size);
-extern void* (*cz_memmove)(void *dst, const void *src, size_t size);
-extern void* (*cz_memset)(void *dst, int ch, size_t size);
-extern void* (*cz_memchr)(const void *src, int ch, size_t size);
-extern int (*cz_memcmp)(const void *lhs, const void *rhs, size_t size);
-extern int (*cz_memscmp)(const char *, size_t, const char *, size_t);
-extern int (*cz_memucmp)(const char *, size_t, const char *, size_t);
+extern void* (*_cz_memcpy)(void *dst, const void *src, size_t size);
+extern void* (*_cz_memmove)(void *dst, const void *src, size_t size);
+extern void* (*_cz_memset)(void *dst, int ch, size_t size);
+extern void* (*_cz_memchr)(const void *src, int ch, size_t size);
+extern int (*_cz_memcmp)(const void *lhs, const void *rhs, size_t size);
+extern int (*_cz_memicmp)(const void *lhs, const void *rhs, size_t size);
+extern int (*_cz_memscmp)(const char *, size_t, const char *, size_t);
+extern int (*_cz_memucmp)(const char *, size_t, const char *, size_t);
 
 
 //=====================================================================
 // STRING STD
 //=====================================================================
 
-size_t _cz_strlen(const char *str);
-char* _cz_strncpy(char *dst, const char *src, size_t count);
-char* _cz_strncat(char *dst, const char *src, size_t count);
-char* _cz_strcpy(char *dst, const char *src);
-char* _cz_strcat(char *dst, const char *src);
+size_t cz_strlen(const char *str);
+size_t cz_strnlen(const char *str, size_t count);
+char* cz_strncpy(char *dst, const char *src, size_t count);
+char* cz_strncat(char *dst, const char *src, size_t count);
+char* cz_strcpy(char *dst, const char *src);
+char* cz_strcat(char *dst, const char *src);
 
-char* _cz_strchr(const char *str, int ch);
-char* _cz_strrchr(const char *str, int ch);
-char* _cz_strstr(const char *s1, const char *s2);
-char* _cz_stristr(const char *s1, const char *s2);
-char* _cz_strsep(char **stringp, const char *delim);
+char* cz_strchr(const char *str, int ch);
+char* cz_strrchr(const char *str, int ch);
+char* cz_strstr(const char *s1, const char *s2);
+char* cz_stristr(const char *s1, const char *s2);
+char* cz_strsep(char **stringp, const char *delim);
 
-int _cz_strcmp(const char *lhs, const char *rhs);
-int _cz_stricmp(const char *lhs, const char *rhs);
-int _cz_strncmp(const char *lhs, const char *rhs, size_t count);
-int _cz_strnicmp(const char *lhs, const char *rhs, size_t count);
+int cz_strcmp(const char *lhs, const char *rhs);
+int cz_stricmp(const char *lhs, const char *rhs);
+int cz_strncmp(const char *lhs, const char *rhs, size_t count);
+int cz_strnicmp(const char *lhs, const char *rhs, size_t count);
 
-size_t _cz_strspn(const char *string, const char *control);
-size_t _cz_strcspn(const char *string, const char *control);
-char* _cz_strpbrk(const char *string, const char *control);
-char* _cz_strrev(char *string);
+size_t cz_strspn(const char *string, const char *control);
+size_t cz_strcspn(const char *string, const char *control);
+char* cz_strpbrk(const char *string, const char *control);
+char* cz_strrev(char *string);
+
+
+extern size_t (*_cz_strlen)(const char*);
+extern size_t (*_cz_strnlen)(const char*, size_t);
+extern char* (*_cz_strncpy)(char*, const char*, size_t count);
+extern char* (*_cz_strncat)(char*, const char*, size_t count);
+extern char* (*_cz_strcpy)(char*, const char*);
+extern char* (*_cz_strcat)(char*, const char*);
+
+
+//=====================================================================
+// MUL/DIV - in case that we don't get a libgcc.a 
+// Don't use it unless CPU is lack of mul/div instructions and libgcc
+// can't really be linked, if so, crtzero will not compromise
+//=====================================================================
+
+IUINT16 cz_uint8_mul(IUINT8 x, IUINT8 y);
+IUINT32 cz_uint16_mul(IUINT16 x, IUINT16 y);
+IUINT32 cz_uint32_mul(IUINT32 x, IUINT32 y);
+IUINT32 cz_uint32_mul2(IUINT32 x, IUINT32 y, IUINT32 *high);
+
+// returns (x / y), *rem = x % y
+IUINT32 cz_uint32_div(IUINT32 x, IUINT32 y, IUINT32 *rem);
+
+
+//=====================================================================
+// STDLIB
+//=====================================================================
+
+IINT32 cz_strtol(const char *nptr, const char **endptr, int ibase);
+IUINT32 cz_strtoul(const char *nptr, const char **endptr, int ibase);
+
+char* cz_ltoa(IINT32 val, char *buf, int radix);
+char* cz_ultoa(IUINT32 val, char *buf, int radix);
+
+IINT32 cz_atoi(const char *s);
+
+// random without a global seed
+IUINT32 cz_crand(IUINT32 *seed);
+IUINT32 cz_crandom(IUINT32 num, IUINT32 *seed);
+
+// random with global seed
+void cz_srand(int seed);
+int cz_rand(void);
+int cz_random(int num);
+
+
 
 
 #ifdef __cplusplus
